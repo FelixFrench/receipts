@@ -23,8 +23,9 @@ def get_wikipedia_info(width: int) -> str:
     # Most read articles
     mostread = data.get("mostread")["articles"][:5]
     mostread_titles = [textwrap.fill(mr["titles"]["normalized"], width=width) for mr in mostread]
+    mostread_descriptions = [textwrap.fill(mr["description"], width=width) for mr in mostread]
     mostread_views = [("(" + str(mr["views"]) + " views)").rjust(width) for mr in mostread]
-    titles_views = zip(mostread_titles, mostread_views)
+    titles_views = zip(mostread_titles, mostread_descriptions, mostread_views)
     joined_titles_views = ["\n".join(tv) for tv in titles_views]
 
     data_string = "Today's featured article".center(width) + "\n"

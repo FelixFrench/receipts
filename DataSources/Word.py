@@ -37,7 +37,7 @@ def get_word_of_the_day(width):
         print("No desc found in the item")
         return f"{title.text}"
 
-    return f"{title.text}:\n{textwrap.fill(description.text, width=width)}"
+    return f"{title.text}\n{textwrap.fill(description.text, width=width)}"
 
 if __name__ == "__main__":
     wotd = get_word_of_the_day(34)

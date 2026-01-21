@@ -58,16 +58,18 @@ def get_energy_consumption(key, product, tariff, mpan, msn) -> str:
     day_usage = timeseries_df[day_mask]['consumption'].sum()
     night_usage = timeseries_df[night_mask]['consumption'].sum()
     total_usage = day_usage + night_usage
+    day_usage_percent = day_usage / total_usage * 100
+    night_usage_percent = night_usage / total_usage * 100
 
     day_charge = day_usage * day_rate
     night_charge = night_usage * night_rate
     total_charge = day_charge + night_charge + standing_charge
 
     table = [
-        ["Day",         f"{day_usage:.2f}",     f"£{day_charge:.2f}"],
-        ["Night",       f"{night_usage:.2f}",   f"£{night_charge:.2f}"],
-        ["Standing",    "",                     f"£{standing_charge:.2f}"],
-        ["Total",       f"{total_usage:.2f}",   f"£{total_charge:.2f}"]
+        ["Day",         f"{day_usage:.2f} ({day_usage_percent:.0f}%)",        f"£{day_charge:.2f}"],
+        ["Night",       f"{night_usage:.2f} ({night_usage_percent:.0f}%)",    f"£{night_charge:.2f}"],
+        ["Standing",    "",                                                 f"£{standing_charge:.2f}"],
+        ["Total",       f"{total_usage:.2f}",                               f"£{total_charge:.2f}"]
     ]
 
     data_string = f"From {datetime.strftime(start_time, "%H:%M:%S %d/%m/%Y")}"
