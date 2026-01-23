@@ -4,27 +4,56 @@ import requests
 import pandas as pd
 from tabulate import tabulate
 from datetime import datetime, timedelta
+import textwrap
 
-def get_energy_consumption(key, product, tariff, mpan, msn) -> str:
+def get_energy_consumption(key, product, postcode, mpan, msn, width = 34) -> str:
+    
+    # ---------- Get Grid Supply Point code from postcode ----------
+    def get_gsp_code(postcode:str)->str:
+        url = f"https://api.octopus.energy/v1/industry/grid-supply-points/?postcode={postcode}"
+        (r := requests.get(url)).raise_for_status()
+
+        results = r.json().get("results")
+        if not results:
+            raise Exception("No grid supply point results returned")
+        
+        group_id = results[0].get("group_id")
+        if not group_id:
+            raise ValueError("Missing group_id in grid supply point response")
+
+        return group_id.lstrip("_")
+    
+    gsp_code = get_gsp_code(postcode)
+    
+    # Form tariff identifier string
+    single_tariff = f"E-1R-{product}-{gsp_code}"
+    dual_tariff = f"E-2R-{product}-{gsp_code}"
+    
     
     # ---------- Get rates ----------
-    def get_rate(rate):
+    def get_rate(tariff, rate:str):
         url = f"https://api.octopus.energy/v1/products/{product}/electricity-tariffs/{tariff}/{rate}/"
         (r := requests.get(url)).raise_for_status()
+
         results = r.json().get("results")
-        if results is None:
+        if not results:
             raise Exception("No energy rate results returned")
         
         value = results[0].get("value_inc_vat")
-        if results is None:
+        if value is None:
             raise Exception("Energy rate results not as expected")
         
         return float(value) / 100
     
-    day_rate = get_rate("day-unit-rates")
-    night_rate = get_rate("night-unit-rates")
-    standing_charge = get_rate("standing-charges")
-    #print(day_rate, night_rate, standing_charge)
+    single_rate = get_rate(single_tariff, "standard-unit-rates")
+    single_standing_charge = get_rate(single_tariff, "standing-charges")
+
+    dual_day_rate = get_rate(dual_tariff, "day-unit-rates")
+    dual_night_rate = get_rate(dual_tariff, "night-unit-rates")
+    dual_standing_charge = get_rate(dual_tariff, "standing-charges")
+
+    #print(single_rate, single_standing_charge)
+    #print(dual_day_rate, dual_night_rate, dual_standing_charge)
 
 
     # ---------- Get consumption data from meter ----------
@@ -49,39 +78,47 @@ def get_energy_consumption(key, product, tariff, mpan, msn) -> str:
     to_unix = lambda x: pd.to_datetime(x.total_seconds(), unit='s', origin='unix')
     timeseries_df['time'] = to_unix((timeseries_df['interval_start'] - timeseries_df['date']).dt)
 
+    # Define the range of the night rate period - these are in UTC like everything else
     night_start = to_unix(pd.Timedelta("00:30:00"))
     day_start = to_unix(pd.Timedelta("07:30:00"))
-
     day_mask = (timeseries_df['time'] >= day_start) | (timeseries_df['time'] < night_start)
     night_mask = (timeseries_df['time'] < day_start) & (timeseries_df['time'] >= night_start)
 
+    # Calculate usage during day and night periods
     day_usage = timeseries_df[day_mask]['consumption'].sum()
     night_usage = timeseries_df[night_mask]['consumption'].sum()
     total_usage = day_usage + night_usage
     day_usage_percent = day_usage / total_usage * 100
     night_usage_percent = night_usage / total_usage * 100
+    
+    # Calculate cost in £ for both the single-rate tariff and dual-rate tariff
+    single_charge = (day_usage + night_usage) * single_rate
+    single_total_charge = single_charge + single_standing_charge
+    dual_day_charge = day_usage * dual_day_rate
+    dual_night_charge = night_usage * dual_night_rate
+    dual_total_charge = dual_day_charge + dual_night_charge + dual_standing_charge
+    single_dual_difference = single_total_charge - dual_total_charge
 
-    day_charge = day_usage * day_rate
-    night_charge = night_usage * night_rate
-    total_charge = day_charge + night_charge + standing_charge
+    comparison_string = f"With a single rate tariff, this would have cost £{single_total_charge:.2f} (+£{single_dual_difference:.2f})"
 
     table = [
-        ["Day",         f"{day_usage:.2f} ({day_usage_percent:.0f}%)",        f"£{day_charge:.2f}"],
-        ["Night",       f"{night_usage:.2f} ({night_usage_percent:.0f}%)",    f"£{night_charge:.2f}"],
-        ["Standing",    "",                                                 f"£{standing_charge:.2f}"],
-        ["Total",       f"{total_usage:.2f}",                               f"£{total_charge:.2f}"]
+        ["Day",         f"{day_usage:.2f} ({day_usage_percent:.0f}%)",        f"£{dual_day_charge:.2f}"],
+        ["Night",       f"{night_usage:.2f} ({night_usage_percent:.0f}%)",    f"£{dual_night_charge:.2f}"],
+        ["Standing",    "",                                                 f"£{dual_standing_charge:.2f}"],
+        ["Total",       f"{total_usage:.2f}",                               f"£{dual_total_charge:.2f}"]
     ]
 
     data_string = f"From {datetime.strftime(start_time, "%H:%M:%S %d/%m/%Y")}"
     data_string += f"\nTo {datetime.strftime(end_time, "%H:%M:%S %d/%m/%Y")}"
     data_string += "\n" + tabulate(table, headers=[None, "Usage [kWh]", "Charge"])
+    data_string += "\n\n" + textwrap.fill(comparison_string, width=width)
 
     return data_string
 
 
 if __name__ == "__main__":
-    from Secrets import energy_api_key, energy_product, energy_tariff, energy_mpan, energy_msn
-    energy_data = get_energy_consumption(energy_api_key, energy_product, energy_tariff, energy_mpan, energy_msn)
+    from Secrets import energy_api_key, energy_product, postcode, energy_mpan, energy_msn
+    energy_data = get_energy_consumption(energy_api_key, energy_product, postcode, energy_mpan, energy_msn)
 
 
     print("\n\n")

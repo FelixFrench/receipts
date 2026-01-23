@@ -22,10 +22,11 @@ width = 34
 # ---------- Data Gathering ----------
 weather = get_day_forecast(Secrets.lat_long)
 
-energy_data = get_energy_consumption(
+dual_tariff_energy_data = get_energy_consumption(
     Secrets.energy_api_key,
-    Secrets.energy_product, Secrets.energy_tariff,
-    Secrets.energy_mpan, Secrets.energy_msn)
+    Secrets.energy_product, Secrets.postcode,
+    Secrets.energy_mpan, Secrets.energy_msn,
+    width)
 
 wotd = get_word_of_the_day(34)
 
@@ -58,7 +59,7 @@ print(weather)
 print("\n")
 
 print(" ENERGY CONSUMPTION ".center(width, "="))
-print(energy_data)
+print(dual_tariff_energy_data)
 print("\n")
 
 print(" WORD OF THE DAY ".center(width, "="))
