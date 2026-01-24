@@ -10,7 +10,7 @@ def get_wikipedia_info(width: int) -> str:
     url = f"https://api.wikimedia.org/feed/v1/wikipedia/en/featured/{today.year}/{today.month:02d}/{today.day:02d}"
 
     headers = {
-        "user-agent": "bot to access wikipedia featured articles once per day pls"
+        "user-agent": "bot to access wikipedia featured articles once per day"
     }
     (r := requests.get(url, headers=headers)).raise_for_status()
     data =  r.json()

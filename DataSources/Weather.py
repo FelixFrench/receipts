@@ -66,8 +66,8 @@ def get_day_forecast(lat_long: tuple[float, float]) -> str:
 
 
 if __name__ == "__main__":
-    import Secrets
-    forecast = get_day_forecast(Secrets.lat_long)
+    from Secrets import lat_long
+    forecast = get_day_forecast(lat_long)
 
     print("\n\n")
     print(forecast)

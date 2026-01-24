@@ -1,13 +1,11 @@
 # Gather data from various sources across the internet to be printed onto a receipt for some breakfast reading
 
 # TODO:
-# Handle exceptions gracefully
 # Add https://api.edinburghfestivalcity.com/ results?
 # Carbon intensity API?
 # Worldometer? https://worldometer.readthedocs.io/en/latest/
-# Use a reverse geocoding API like https://nominatim.openstreetmap.org/reverse to get placename from lat_long
 
-
+from DataSources.ReverseGeocode import reverse_geocode_label
 from DataSources.Weather import get_day_forecast
 from DataSources.Energy import get_energy_consumption
 from DataSources.Word import get_word_of_the_day
@@ -40,6 +38,9 @@ def safe_call(func, *args, default="Not available", **kwargs):
         return func(*args, **kwargs)
     except Exception:
         return default
+    
+print("Location")
+location_string = safe_call(reverse_geocode_label, Secrets.lat_long, default="Unrecognised location")
     
 print("Weather")
 weather = safe_call(get_day_forecast, Secrets.lat_long)
@@ -98,7 +99,7 @@ def get_today_string():
 
 # ---------- Printing ----------
 output = (" " + get_today_string() + " ").center(width, "=") + "\n"
-
+output += (location_string).center(width) + "\n\n"
 
 output += " WEATHER ".center(width, "=") + "\n"
 output += weather
@@ -129,7 +130,8 @@ output += poem
 output += "\n\n"
 
 output_lines = output.splitlines()
-print(len(output_lines))
+print(len(output_lines), "lines\n")
+
 for line in output_lines:
-    print(line)
+    print(line[:width])
     sleep(0.02)
