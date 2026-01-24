@@ -12,28 +12,39 @@ from DataSources.Energy import get_energy_consumption
 from DataSources.Word import get_word_of_the_day
 from DataSources.News import get_headlines
 from DataSources.Wikipedia import get_wikipedia_info
+from DataSources.Burns import get_burns_poem
 from DataSources import Secrets
 from datetime import datetime
+from time import sleep
 
 # Maximum characters per line
 width = 34
 
 
 # ---------- Data Gathering ----------
+print("Weather")
 weather = get_day_forecast(Secrets.lat_long)
 
+print("Energy")
 dual_tariff_energy_data = get_energy_consumption(
     Secrets.energy_api_key,
     Secrets.energy_product, Secrets.postcode,
     Secrets.energy_mpan, Secrets.energy_msn,
     width)
 
+print("Word")
 wotd = get_word_of_the_day(34)
 
+print("News")
 news_headlines = get_headlines(Secrets.newsapi_org_key, "bbc-news", width)
+print("Sports")
 sport_headlines = get_headlines(Secrets.newsapi_org_key, "bbc-sport", width)
 
+print("Wikipedia")
 wikipedia_text = get_wikipedia_info(width)
+
+print("Poem")
+poem = get_burns_poem()
 
 
 # ---------- Helper functions ----------
@@ -52,28 +63,39 @@ def get_today_string():
 
 
 # ---------- Printing ----------
-print((" " + get_today_string() + " ").center(width, "="))
+output = (" " + get_today_string() + " ").center(width, "=") + "\n"
 
-print(" WEATHER ".center(width, "="))
-print(weather)
-print("\n")
 
-print(" ENERGY CONSUMPTION ".center(width, "="))
-print(dual_tariff_energy_data)
-print("\n")
+output += " WEATHER ".center(width, "=") + "\n"
+output += weather
+output += "\n\n"
 
-print(" WORD OF THE DAY ".center(width, "="))
-print(wotd)
-print("\n")
+output += " ENERGY CONSUMPTION ".center(width, "=") + "\n"
+output += dual_tariff_energy_data
+output += "\n\n"
 
-print(" NEWS ".center(width, "="))
-print(news_headlines)
-print("\n")
+output += " WORD OF THE DAY ".center(width, "=") + "\n"
+output += wotd
+output += "\n\n"
 
-print(" SPORTS ".center(width, "="))
-print(sport_headlines)
-print("\n")
+output += " NEWS ".center(width, "=") + "\n"
+output += news_headlines
+output += "\n\n"
 
-print(" WIKIPEDIA ".center(width, "="))
-print(wikipedia_text)
-print("\n")
+output += " SPORTS ".center(width, "=") + "\n"
+output += sport_headlines
+output += "\n\n"
+
+output += " WIKIPEDIA ".center(width, "=") + "\n"
+output += wikipedia_text
+output += "\n\n"
+
+output += " TODAY'S BURNS POEM ".center(width, "=") + "\n"
+output += poem
+output += "\n\n"
+
+output_lines = output.splitlines()
+print(len(output_lines))
+for line in output_lines:
+    print(line)
+    sleep(0.02)
