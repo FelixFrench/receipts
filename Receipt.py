@@ -5,6 +5,7 @@
 # Add https://api.edinburghfestivalcity.com/ results?
 # Carbon intensity API?
 # Worldometer? https://worldometer.readthedocs.io/en/latest/
+# Use a reverse geocoding API like https://nominatim.openstreetmap.org/reverse to get placename from lat_long
 
 
 from DataSources.Weather import get_day_forecast
@@ -22,29 +23,62 @@ width = 34
 
 
 # ---------- Data Gathering ----------
+def safe_call(func, *args, default="Not available", **kwargs):
+    """
+    Call a function and return a default value if it raises an exception.
+
+    Args:
+        func (callable): The function to invoke.
+        *args: Positional arguments passed to the function.
+        default (Any): Value to return if an exception is raised.
+        **kwargs: Keyword arguments passed to the function.
+
+    Returns:
+        Any: The function's return value if successful, otherwise `default`.
+    """
+    try:
+        return func(*args, **kwargs)
+    except Exception:
+        return default
+    
 print("Weather")
-weather = get_day_forecast(Secrets.lat_long)
+weather = safe_call(get_day_forecast, Secrets.lat_long)
 
 print("Energy")
-dual_tariff_energy_data = get_energy_consumption(
+dual_tariff_energy_data = safe_call(
+    get_energy_consumption,
     Secrets.energy_api_key,
-    Secrets.energy_product, Secrets.postcode,
-    Secrets.energy_mpan, Secrets.energy_msn,
-    width)
+    Secrets.energy_product,
+    Secrets.postcode,
+    Secrets.energy_mpan,
+    Secrets.energy_msn,
+    width
+)
 
 print("Word")
-wotd = get_word_of_the_day(34)
+wotd = safe_call(get_word_of_the_day, 34)
 
 print("News")
-news_headlines = get_headlines(Secrets.newsapi_org_key, "bbc-news", width)
+news_headlines = safe_call(
+    get_headlines,
+    Secrets.newsapi_org_key,
+    "bbc-news",
+    width
+)
+
 print("Sports")
-sport_headlines = get_headlines(Secrets.newsapi_org_key, "bbc-sport", width)
+sport_headlines = safe_call(
+    get_headlines,
+    Secrets.newsapi_org_key,
+    "bbc-sport",
+    width
+)
 
 print("Wikipedia")
-wikipedia_text = get_wikipedia_info(width)
+wikipedia_text = safe_call(get_wikipedia_info, width)
 
 print("Poem")
-poem = get_burns_poem()
+poem = safe_call(get_burns_poem)
 
 
 # ---------- Helper functions ----------
