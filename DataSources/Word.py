@@ -2,9 +2,8 @@
 
 import requests
 from xml.etree import ElementTree
-import textwrap
 
-def get_word_of_the_day(width):
+def get_word_of_the_day() -> list[tuple[str,str]]:
 
     rss_url = "https://wordsmith.org/awad/rss1.xml"
     response = requests.get(rss_url)
@@ -37,10 +36,10 @@ def get_word_of_the_day(width):
         print("No desc found in the item")
         return f"{title.text}"
 
-    return f"{title.text}\n{textwrap.fill(description.text, width=width)}"
+    return [(title.text, "body"), (description.text, "body")]
 
 if __name__ == "__main__":
-    wotd = get_word_of_the_day(34)
+    wotd = get_word_of_the_day()
 
     print("\n\n")
     print(wotd)

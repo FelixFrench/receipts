@@ -62,7 +62,7 @@ def format_weather_data(data: dict) -> str:
 def get_day_forecast(lat_long: tuple[float, float]) -> str:
 
     data = fetch_weather_data(lat_long)
-    return format_weather_data(data)
+    return (format_weather_data(data), "body")
 
 
 if __name__ == "__main__":
@@ -70,5 +70,5 @@ if __name__ == "__main__":
     forecast = get_day_forecast(lat_long)
 
     print("\n\n")
-    print(forecast)
+    print(forecast[0])
     print("\n\n")

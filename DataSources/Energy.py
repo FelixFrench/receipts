@@ -4,9 +4,8 @@ import requests
 import pandas as pd
 from tabulate import tabulate
 from datetime import datetime, timedelta
-import textwrap
 
-def get_energy_consumption(key, product, postcode, mpan, msn, width = 34) -> str:
+def get_energy_consumption(key, product, postcode, mpan, msn) -> str:
     
     # ---------- Get Grid Supply Point code from postcode ----------
     def get_gsp_code(postcode:str)->str:
@@ -111,9 +110,9 @@ def get_energy_consumption(key, product, postcode, mpan, msn, width = 34) -> str
     data_string = f"From {datetime.strftime(start_time, "%H:%M:%S %d/%m/%Y")}"
     data_string += f"\nTo {datetime.strftime(end_time, "%H:%M:%S %d/%m/%Y")}"
     data_string += "\n" + tabulate(table, headers=[None, "Usage [kWh]", "Charge"])
-    data_string += "\n\n" + textwrap.fill(comparison_string, width=width)
+    data_string += "\n\n" + comparison_string
 
-    return data_string
+    return (data_string, "body")
 
 
 if __name__ == "__main__":
@@ -122,5 +121,5 @@ if __name__ == "__main__":
 
 
     print("\n\n")
-    print(energy_data)
+    print(energy_data[0])
     print("\n\n")

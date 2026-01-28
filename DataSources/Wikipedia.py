@@ -2,9 +2,8 @@
 
 import requests
 from datetime import datetime
-import textwrap
 
-def get_wikipedia_info(width: int) -> str:
+def get_wikipedia_info() -> str:
     today = datetime.now()
 
     url = f"https://api.wikimedia.org/feed/v1/wikipedia/en/featured/{today.year}/{today.month:02d}/{today.day:02d}"
@@ -17,23 +16,23 @@ def get_wikipedia_info(width: int) -> str:
 
     # Today's featured article
     tfa = data.get("tfa")
-    tfa_title = textwrap.fill(tfa["titles"]["normalized"], width=width)
-    tfa_extract = textwrap.fill(tfa["extract"], width=width)
+    tfa_title = tfa["titles"]["normalized"]
+    tfa_extract = tfa["extract"]
 
     # Most read articles
     mostread = data.get("mostread")["articles"][:5]
-    mostread_titles = [textwrap.fill(mr["titles"]["normalized"], width=width) for mr in mostread]
-    mostread_descriptions = [textwrap.fill(mr["description"], width=width) for mr in mostread]
-    mostread_views = [("(" + str(mr["views"]) + " views)").rjust(width) for mr in mostread]
-    titles_views = zip(mostread_titles, mostread_descriptions, mostread_views)
-    joined_titles_views = ["\n".join(tv) for tv in titles_views]
 
-    data_string = "Today's featured article".center(width) + "\n"
-    data_string += f"{tfa_title}\n{tfa_extract}\n\n"
-    data_string += "Most read articles".center(width) + "\n"
-    data_string += "\n".join(joined_titles_views)
+    blocks = [("Today's featured article", "subheading")]
+    blocks.append((tfa_title, "body"))
+    blocks.append((tfa_extract, "body"))
+    blocks.append(("-", "subheading"))
+    blocks.append(("Most read articles", "subheading"))
+    for mr in mostread:
+        blocks.append((mr["titles"]["normalized"], "body"))
+        blocks.append((mr["description"], "body"))
+        blocks.append(("(" + str(mr["views"]) + " views)", "rightAlign"))
 
-    return data_string
+    return blocks
 
 if __name__ == "__main__":
     wikipedia_info = get_wikipedia_info(34)

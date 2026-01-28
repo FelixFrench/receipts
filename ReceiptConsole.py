@@ -4,6 +4,7 @@
 # Add https://api.edinburghfestivalcity.com/ results?
 # Carbon intensity API?
 # Worldometer? https://worldometer.readthedocs.io/en/latest/
+# Sort news
 
 from DataSources.ReverseGeocode import reverse_geocode_label
 from DataSources.Weather import get_day_forecast
@@ -16,9 +17,9 @@ from DataSources import Secrets
 from datetime import datetime
 from time import sleep
 
-# Maximum characters per line
-width = 34
-
+RECEIPT_WIDTH = 42
+MARGIN = 2
+width = RECEIPT_WIDTH - 2 * MARGIN
 
 # ---------- Data Gathering ----------
 def safe_call(func, *args, default="Not available", **kwargs):
@@ -130,8 +131,6 @@ output += poem
 output += "\n\n"
 
 output_lines = output.splitlines()
-print(len(output_lines), "lines\n")
-
 for line in output_lines:
     print(line[:width])
     sleep(0.02)
