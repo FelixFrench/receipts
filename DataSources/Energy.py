@@ -107,8 +107,8 @@ def get_energy_consumption(key, product, postcode, mpan, msn) -> str:
         ["Total",       f"{total_usage:.2f}",                               f"£{dual_total_charge:.2f}"]
     ]
 
-    data_string = f"From {datetime.strftime(start_time, "%H:%M:%S %d/%m/%Y")}"
-    data_string += f"\nTo {datetime.strftime(end_time, "%H:%M:%S %d/%m/%Y")}"
+    data_string = f"From {datetime.strftime(start_time, '%H:%M:%S %d/%m/%Y')}"
+    data_string += f"\nTo {datetime.strftime(end_time, '%H:%M:%S %d/%m/%Y')}"
     data_string += "\n" + tabulate(table, headers=[None, "Usage [kWh]", "Charge"])
     data_string += "\n\n" + comparison_string
 
