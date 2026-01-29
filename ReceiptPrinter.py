@@ -19,11 +19,9 @@ from time import sleep
 from escpos.printer import Network
 import textwrap
 
-PRINTER_IP = "10.178.77.174"
+PRINTER_IP = "192.168.1.165"
 PRINTER_TYPE = "TM-T88IV"
 MARGIN = 2
-
-
 
 
 def ordinal(n: int):
