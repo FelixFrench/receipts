@@ -1,2 +1,4 @@
 /DataSources/__pycache__
-DataSources/Secrets.py
+.env
+DataSources/test.py
+.cache

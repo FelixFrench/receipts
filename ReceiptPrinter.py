@@ -4,7 +4,7 @@
 # Add https://api.edinburghfestivalcity.com/ results?
 # Carbon intensity API?
 # Worldometer? https://worldometer.readthedocs.io/en/latest/
-# Sort news
+# Use some method to sort news headlines
 
 from DataSources.ReverseGeocode import reverse_geocode_label
 from DataSources.Weather import get_day_forecast
@@ -13,15 +13,23 @@ from DataSources.Word import get_word_of_the_day
 from DataSources.News import get_headlines
 from DataSources.Wikipedia import get_wikipedia_info
 from DataSources.Burns import get_burns_poem
-from DataSources import Secrets
+import os, textwrap
+from dotenv import load_dotenv
 from datetime import datetime
-from time import sleep
 from escpos.printer import Network
-import textwrap
 
 PRINTER_IP = "192.168.1.165"
 PRINTER_TYPE = "TM-T88IV"
 MARGIN = 2
+
+load_dotenv()
+LAT_LONG = tuple(map(float, os.getenv("LAT_LONG").split(",")))
+ENERGY_API_KEY = os.getenv("ENERGY_API_KEY")
+ENERGY_PRODUCT = os.getenv("ENERGY_PRODUCT")
+POSTCODE = os.getenv("POSTCODE")
+ENERGY_MPAN = os.getenv("ENERGY_MPAN")
+ENERGY_MSN = os.getenv("ENERGY_MSN")
+NEWSAPI_ORG_KEY = os.getenv("NEWSAPI_ORG_KEY")
 
 
 def ordinal(n: int):
@@ -32,7 +40,7 @@ def ordinal(n: int):
     return str(n) + suffix
 
 def get_today_string():
-    "Monday 1st January 2026"
+    # "Monday 1st January 2026"
     today = datetime.now()
     return today.strftime(f"%A {ordinal(today.day)} %B %Y")
 
@@ -56,18 +64,18 @@ def safe_call(func, *args, default="Not available", **kwargs):
         return default
 
 # ---------- Data Gathering ----------
-location_string = safe_call(reverse_geocode_label, Secrets.lat_long, default="Unrecognised location")
-weather_block = safe_call(get_day_forecast, Secrets.lat_long, default=("Not available", "body"))
+location_string = safe_call(reverse_geocode_label, LAT_LONG, default="Unrecognised location")
+weather_block = safe_call(get_day_forecast, LAT_LONG, default=("Not available", "body"))
 energy_block = safe_call(get_energy_consumption,
-    Secrets.energy_api_key, Secrets.energy_product, Secrets.postcode,
-    Secrets.energy_mpan, Secrets.energy_msn, default=("Not available", "body")
+    ENERGY_API_KEY, ENERGY_PRODUCT, POSTCODE,
+    ENERGY_MPAN, ENERGY_MSN, default=("Not available", "body")
 )
 wotd_blocks = safe_call(get_word_of_the_day, default=[("Not available", "body")])
 news_headlines = safe_call(get_headlines,
-    Secrets.newsapi_org_key, "bbc-news", default=[("Not available", "body")]
+    NEWSAPI_ORG_KEY, "bbc-news", default=[("Not available", "body")]
 )
 sport_headlines = safe_call(get_headlines,
-    Secrets.newsapi_org_key, "bbc-sport", default=[("Not available", "body")]
+    NEWSAPI_ORG_KEY, "bbc-sport", default=[("Not available", "body")]
 )
 wikipedia_blocks = safe_call(get_wikipedia_info, default=[("Not available", "body")])
 poem = safe_call(get_burns_poem)
@@ -154,7 +162,7 @@ printer.ln(2)
 
 # Poem
 print_line("TODAY'S BURNS POEM", "heading")
-print_block((poem, "body"))
+print_blocks(poem)
 printer.ln(2)
 
 # Finalise

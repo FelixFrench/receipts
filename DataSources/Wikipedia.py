@@ -35,8 +35,9 @@ def get_wikipedia_info() -> str:
     return blocks
 
 if __name__ == "__main__":
-    wikipedia_info = get_wikipedia_info(34)
+    wikipedia_info = get_wikipedia_info()
 
     print("\n\n")
-    print(wikipedia_info)
+    for block in wikipedia_info:
+        print(block[0])
     print("\n\n")

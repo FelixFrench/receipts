@@ -42,5 +42,6 @@ if __name__ == "__main__":
     wotd = get_word_of_the_day()
 
     print("\n\n")
-    print(wotd)
+    for block in wotd:
+        print(block[0])
     print("\n\n")

@@ -25,5 +25,9 @@ def reverse_geocode_label(lat_long: tuple[float,float]) -> str:
 
 
 if __name__ == "__main__":
-    from Secrets import lat_long
-    print(reverse_geocode_label(lat_long))
+    import os
+    from dotenv import load_dotenv
+    load_dotenv("../.env")
+    LAT_LONG = tuple(map(float, os.getenv("LAT_LONG").split(",")))
+
+    print(reverse_geocode_label(LAT_LONG))

@@ -87,7 +87,9 @@ def get_burns_poem(width = 34):
     param width: The maximum line length in chars
     Returns a multiline string
     """
+    
     (title, slug) = choose_poem()
+    blocks = [(title, "subheading")]
     poem_text = scrape_poem(slug)
 
     wrapped_lines = []
@@ -108,7 +110,8 @@ def get_burns_poem(width = 34):
 
         wrapped_lines.extend(wrapped)
 
-    return title.center(width) + "\n\n" + "\n".join(wrapped_lines)
+    blocks.extend([(line, "body") for line in wrapped_lines])
+    return blocks#title.center(width) + "\n\n" + "\n".join(wrapped_lines)
 
 
 if __name__ == "__main__":
@@ -116,5 +119,6 @@ if __name__ == "__main__":
     poem = get_burns_poem()
     
     print("\n\n")
-    print(poem)
+    for block in poem:
+        print(block[0])
     print("\n\n")

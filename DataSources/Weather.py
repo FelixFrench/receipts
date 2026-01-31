@@ -66,8 +66,12 @@ def get_day_forecast(lat_long: tuple[float, float]) -> str:
 
 
 if __name__ == "__main__":
-    from Secrets import lat_long
-    forecast = get_day_forecast(lat_long)
+    import os
+    from dotenv import load_dotenv
+    load_dotenv("../.env")
+    LAT_LONG = tuple(map(float, os.getenv("LAT_LONG").split(",")))
+
+    forecast = get_day_forecast(LAT_LONG)
 
     print("\n\n")
     print(forecast[0])

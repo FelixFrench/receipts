@@ -6,9 +6,16 @@ from tabulate import tabulate
 from datetime import datetime, timedelta
 
 def get_energy_consumption(key, product, postcode, mpan, msn) -> str:
+    """
+    Creates a formatted block of text giving information on recent energy consumption for one metering point
+    """
     
     # ---------- Get Grid Supply Point code from postcode ----------
     def get_gsp_code(postcode:str)->str:
+        """
+        Finds the Octopus "grid supply point code" for the given postcode
+        """
+
         url = f"https://api.octopus.energy/v1/industry/grid-supply-points/?postcode={postcode}"
         (r := requests.get(url)).raise_for_status()
 
@@ -31,6 +38,10 @@ def get_energy_consumption(key, product, postcode, mpan, msn) -> str:
     
     # ---------- Get rates ----------
     def get_rate(tariff, rate:str):
+        """
+        Gets the cost in GBP of a given rate for a given tarriff and product
+        """
+
         url = f"https://api.octopus.energy/v1/products/{product}/electricity-tariffs/{tariff}/{rate}/"
         (r := requests.get(url)).raise_for_status()
 
@@ -57,6 +68,10 @@ def get_energy_consumption(key, product, postcode, mpan, msn) -> str:
 
     # ---------- Get consumption data from meter ----------
     def get_last_24h_consumption():
+        """
+        Requests the most recent available 24 hours (48x 30min readings) of consumption data
+        """
+
         url = f"https://api.octopus.energy/v1/electricity-meter-points/{mpan}/meters/{msn}/consumption/"
         url += "?page_size=48&order_by=-period"
 
@@ -116,9 +131,20 @@ def get_energy_consumption(key, product, postcode, mpan, msn) -> str:
 
 
 if __name__ == "__main__":
-    from Secrets import energy_api_key, energy_product, postcode, energy_mpan, energy_msn
-    energy_data = get_energy_consumption(energy_api_key, energy_product, postcode, energy_mpan, energy_msn)
+    import os
+    from dotenv import load_dotenv
+    load_dotenv("../.env")
 
+    ENERGY_API_KEY = os.getenv("ENERGY_API_KEY")
+    ENERGY_PRODUCT = os.getenv("ENERGY_PRODUCT")
+    POSTCODE = os.getenv("POSTCODE")
+    ENERGY_MPAN = os.getenv("ENERGY_MPAN")
+    ENERGY_MSN = os.getenv("ENERGY_MSN")
+
+    energy_data = get_energy_consumption(
+        ENERGY_API_KEY, ENERGY_PRODUCT, POSTCODE,
+        ENERGY_MPAN, ENERGY_MSN
+    )
 
     print("\n\n")
     print(energy_data[0])
