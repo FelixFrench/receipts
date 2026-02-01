@@ -5,6 +5,7 @@ from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 from escpos.printer import Network
 from PIL import Image, ImageFile
+import sys
 
 # Load environment variables
 load_dotenv()
@@ -12,8 +13,13 @@ load_dotenv()
 PRINTER_IP = "192.168.1.165"
 
 # Spotify OAuth setup
+if len(sys.argv) > 1:
+    cache_path = sys.argv[1]
+else:
+    cache_path = ".cache"
+
 sp = spotipy.Spotify(
-    auth_manager=SpotifyOAuth(scope="user-library-read")
+    auth_manager = SpotifyOAuth(scope="user-library-read", open_browser=False, cache_path=cache_path)
 )
 
 def get_random_liked_song():
