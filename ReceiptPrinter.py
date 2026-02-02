@@ -4,7 +4,7 @@
 # Add https://api.edinburghfestivalcity.com/ results?
 # Carbon intensity API?
 # Worldometer? https://worldometer.readthedocs.io/en/latest/
-# Use some method to sort news headlines
+# Use RSS feeds for news, and other things too?
 
 from DataSources.ReverseGeocode import reverse_geocode_label
 from DataSources.Weather import get_day_forecast

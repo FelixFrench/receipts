@@ -1,6 +1,8 @@
 # Provides a function to get news headlines from a specified source
+# N.B.: newsapi.org has a 24h delay on its free plan
 
-import requests
+import requests, json
+from datetime import datetime
 
 def get_headlines(api_key: str, source: int, count: int=5) -> str:
     """
@@ -16,24 +18,28 @@ def get_headlines(api_key: str, source: int, count: int=5) -> str:
     """
 
     url = "https://newsapi.org/v2/top-headlines"
-    params = {
-        "sources": source,
-        "apiKey": api_key
-    }
-    resp = requests.get(url, params=params)
+    params = {"sources": source, "pageSize": 100, "sortBy": "publishedAt"}
+    headers = {'Authorization': api_key}
+    resp = requests.get(url, params=params, headers=headers)
     resp.raise_for_status()
     data = resp.json()
 
-    # Extract article titles
+    # Extract article titles and sources
     articles = data.get("articles", [])[:count]
+    print(json.dumps(articles, indent=2))
     titles = [a.get("title","") for a in articles]
     sources = [a.get("source",{}).get("name","") for a in articles]
 
-    title_sources = zip(titles, sources)
+    # Extract published at time for each article in format "hh:mm DD/MM"
+    datetimes = [datetime.fromisoformat(a.get("publishedAt","").replace("Z", "+00:00")) for a in articles]
+    datetime_strings = [dt.strftime("%H:%M %d/%m") for dt in datetimes]
+
+    # For each article, create a headline block and a '- source, time' block
+    title_source_times = zip(titles, sources, datetime_strings)
     blocks = []
-    for (title, source) in title_sources:
+    for (title, source, time) in title_source_times:
         blocks.append((title, "body"))
-        blocks.append(("- " + source, "rightAlign"))
+        blocks.append(("- " + source + ", " + time, "rightAlign"))
 
     return blocks
 
@@ -44,16 +50,15 @@ if __name__ == "__main__":
     load_dotenv("../.env")
     NEWSAPI_ORG_KEY = os.getenv("NEWSAPI_ORG_KEY")
 
-    width = 34
-    news_headlines = get_headlines(NEWSAPI_ORG_KEY, "bbc-news", width)
-    sport_headlines = get_headlines(NEWSAPI_ORG_KEY, "bbc-sport", width)
+    news_headlines = get_headlines(NEWSAPI_ORG_KEY, "bbc-news")
+    #sport_headlines = get_headlines(NEWSAPI_ORG_KEY, "bbc-sport")
 
     print("\n\n")
-    print(" NEWS ".center(width, "="))
+    print("NEWS")
     for block in news_headlines:
         print(block[0])
     print("\n\n")
-    print(" SPORTS ".center(width, "="))
-    for block in sport_headlines:
-        print(block[0])
-    print("\n\n")
+    # print("SPORT")
+    # for block in sport_headlines:
+    #     print(block[0])
+    # print("\n\n")
