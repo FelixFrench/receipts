@@ -72,7 +72,6 @@ def get_spotify_code(uri: str, width: int = 512, bg: str = "000000", fg: str = "
     # Encode URI for Spotify scannables endpoint
     encoded_uri = quote(uri, safe='')
     url = f"https://scannables.scdn.co/uri/plain/jpeg/{bg}/{fg}/{width}/{encoded_uri}"
-    print(url)
 
     response = requests.get(url)
     if response.status_code != 200:

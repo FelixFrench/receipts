@@ -5,6 +5,8 @@
 # Carbon intensity API?
 # Worldometer? https://worldometer.readthedocs.io/en/latest/
 # Use RSS feeds for news, and other things too?
+# Get lat,long from postcode
+# Choose local news feed from postcode
 
 from DataSources.ReverseGeocode import reverse_geocode_label
 from DataSources.Weather import get_day_forecast
@@ -71,12 +73,9 @@ energy_block = safe_call(get_energy_consumption,
     ENERGY_MPAN, ENERGY_MSN, default=("Not available", "body")
 )
 wotd_blocks = safe_call(get_word_of_the_day, default=[("Not available", "body")])
-news_headlines = safe_call(get_headlines,
-    NEWSAPI_ORG_KEY, "bbc-news", default=[("Not available", "body")]
-)
-sport_headlines = safe_call(get_headlines,
-    NEWSAPI_ORG_KEY, "bbc-sport", default=[("Not available", "body")]
-)
+national_news_thumb, national_news_blocks = safe_call(get_headlines, os.getenv("NEWS_NATIONAL"), default=[("Not available", "body")])
+local_news_thumb, local_news_blocks = safe_call(get_headlines, os.getenv("NEWS_LOCAL"), default=[("Not available", "body")])
+sport_thumb, sport_blocks = safe_call(get_headlines, os.getenv("NEWS_SPORT"), default=[("Not available", "body")])
 wikipedia_blocks = safe_call(get_wikipedia_info, default=[("Not available", "body")])
 poem = safe_call(get_burns_poem)
 
@@ -145,15 +144,20 @@ print_line("WORD OF THE DAY", "heading")
 print_blocks(wotd_blocks)
 printer.ln(2)
 
-# News
-print_line("NEWS", "heading")
-print_blocks(news_headlines)
-printer.ln(2)
+# News & sport headlines helper function
+def print_headlines(heading:str, image, blocks:list[tuple[str,str]]):
 
-# Sport
-print_line("SPORT", "heading")
-print_blocks(sport_headlines)
-printer.ln(2)
+    print_line(heading, "heading")
+    printer.set(align="center")
+    if image:
+        printer.image(image)
+    print_blocks(blocks)
+    printer.ln(2)
+
+# Print news and sport
+print_headlines("NATIONAL NEWS", national_news_thumb, national_news_blocks)
+print_headlines("LOCAL NEWS", local_news_thumb, local_news_blocks)
+print_headlines("SPORT", sport_thumb, sport_blocks)
 
 # Wikipedia
 print_line("WIKIPEDIA", "heading")
