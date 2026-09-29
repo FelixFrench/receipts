@@ -22,7 +22,7 @@ def fetch_weather_data(lat_long: tuple[float, float]) -> dict:
         "sunrise,sunset,daylight_duration," \
         "precipitation_hours,precipitation_probability_max,precipitation_sum," \
         "wind_speed_10m_max,wind_gusts_10m_max",
-        "timezone":"GMT"
+        "timezone":"auto"
     }
 
     response = requests.get(url,params=request_payload)

@@ -20,7 +20,7 @@ def choose_poem()-> tuple[str, str]:
     Returns a tuple of (title, slug), where slug can be used in a url
      to get the full text
     """
-    response = requests.get(JSON_URL)
+    response = requests.get(JSON_URL, timeout=10)
     response.raise_for_status()
 
     works = response.json()
@@ -28,7 +28,7 @@ def choose_poem()-> tuple[str, str]:
 
     # Rotate through one poem per day
     today = datetime.now(timezone.utc).date()
-    epoch = datetime(2026, 1, 23, tzinfo=timezone.utc).date()
+    epoch = datetime(2026, 5, 20, tzinfo=timezone.utc).date()
     days_since_epoch = (today - epoch).days
     index = days_since_epoch % len(titles)
 
