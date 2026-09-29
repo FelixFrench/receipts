@@ -1,0 +1,7 @@
+python-escpos
+requests
+beautifulsoup4
+pandas
+tabulate
+feedparser
+dotenv

@@ -13,13 +13,23 @@ from DataSources.Word import get_word_of_the_day
 from DataSources.News import get_headlines
 from DataSources.Wikipedia import get_wikipedia_info
 from DataSources.Burns import get_burns_poem
-from DataSources import Secrets
 from datetime import datetime
 from time import sleep
+from dotenv import load_dotenv
 
 RECEIPT_WIDTH = 42
 MARGIN = 2
 width = RECEIPT_WIDTH - 2 * MARGIN
+
+load_dotenv()
+LAT_LONG = tuple(map(float, os.getenv("LAT_LONG").split(",")))
+ENERGY_API_KEY = os.getenv("ENERGY_API_KEY")
+ENERGY_PRODUCT = os.getenv("ENERGY_PRODUCT")
+POSTCODE = os.getenv("POSTCODE")
+ENERGY_MPAN = os.getenv("ENERGY_MPAN")
+ENERGY_MSN = os.getenv("ENERGY_MSN")
+NEWSAPI_ORG_KEY = os.getenv("NEWSAPI_ORG_KEY")
+
 
 # ---------- Data Gathering ----------
 def safe_call(func, *args, default="Not available", **kwargs):
@@ -41,19 +51,19 @@ def safe_call(func, *args, default="Not available", **kwargs):
         return default
     
 print("Location")
-location_string = safe_call(reverse_geocode_label, Secrets.lat_long, default="Unrecognised location")
+location_string = safe_call(reverse_geocode_label, LAT_LONG, default="Unrecognised location")
     
 print("Weather")
-weather = safe_call(get_day_forecast, Secrets.lat_long)
+weather = safe_call(get_day_forecast, LAT_LONG)
 
 print("Energy")
 dual_tariff_energy_data = safe_call(
     get_energy_consumption,
-    Secrets.energy_api_key,
-    Secrets.energy_product,
-    Secrets.postcode,
-    Secrets.energy_mpan,
-    Secrets.energy_msn,
+    ENERGY_API_KEY,
+    ENERGY_PRODUCT,
+    POSTCODE,
+    ENERGY_MPAN,
+    ENERGY_MSN,
     width
 )
 
@@ -63,7 +73,7 @@ wotd = safe_call(get_word_of_the_day, 34)
 print("News")
 news_headlines = safe_call(
     get_headlines,
-    Secrets.newsapi_org_key,
+    NEWSAPI_ORG_KEY,
     "bbc-news",
     width
 )
@@ -71,7 +81,7 @@ news_headlines = safe_call(
 print("Sports")
 sport_headlines = safe_call(
     get_headlines,
-    Secrets.newsapi_org_key,
+    NEWSAPI_ORG_KEY,
     "bbc-sport",
     width
 )
