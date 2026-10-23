@@ -2,8 +2,37 @@
 
 import requests
 from datetime import datetime
+from typing import TypedDict, cast
 
-def fetch_weather_data(lat_long: tuple[float, float]) -> dict:
+
+class DailyForecast(TypedDict):
+    """
+    The "daily" section of an open-meteo forecast response.
+    Each list has one entry per day requested.
+    """
+    time: list[str]                             # "2026-01-01"
+    temperature_2m_max: list[float]             # °C
+    temperature_2m_min: list[float]             # °C
+    apparent_temperature_max: list[float]       # °C
+    apparent_temperature_min: list[float]       # °C
+    sunrise: list[str]                          # "2026-01-01T08:00", local time
+    sunset: list[str]                           # "2026-01-01T17:52", local time
+    daylight_duration: list[float]              # seconds
+    precipitation_hours: list[float]            # hours
+    precipitation_probability_max: list[int]    # %
+    precipitation_sum: list[float]              # mm
+    wind_speed_10m_max: list[float]             # km/h
+    wind_gusts_10m_max: list[float]             # km/h
+
+
+class ForecastResponse(TypedDict):
+    """
+    The parts of an open-meteo forecast response that are used here
+    """
+    daily: DailyForecast
+
+
+def fetch_weather_data(lat_long: tuple[float, float]) -> ForecastResponse:
     """
     Fetches a set list of weather forecast data for today from open-meteo.com
 
@@ -27,28 +56,32 @@ def fetch_weather_data(lat_long: tuple[float, float]) -> dict:
 
     response = requests.get(url, params=request_payload)
     response.raise_for_status()
-    return response.json()
+    data = response.json()
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected a JSON object, got {type(data).__name__}")
 
-def format_weather_data(data: dict) -> str:
+    return cast(ForecastResponse, data)
+
+def format_weather_data(data: ForecastResponse) -> str:
 
     daily = data["daily"]
 
-    temperature_2m_max = int(daily["temperature_2m_max"][0])
-    temperature_2m_min = int(daily["temperature_2m_min"][0])
-    apparent_temperature_max = int(daily["apparent_temperature_max"][0])
-    apparent_temperature_min = int(daily["apparent_temperature_min"][0])
+    temperature_2m_max = round(daily["temperature_2m_max"][0])
+    temperature_2m_min = round(daily["temperature_2m_min"][0])
+    apparent_temperature_max = round(daily["apparent_temperature_max"][0])
+    apparent_temperature_min = round(daily["apparent_temperature_min"][0])
 
     sunrise = datetime.strptime(daily["sunrise"][0], "%Y-%m-%dT%H:%M").strftime("%H:%M")
     sunset = datetime.strptime(daily["sunset"][0], "%Y-%m-%dT%H:%M").strftime("%H:%M")
-    daylight_duration_seconds =  int(daily["daylight_duration"][0])
+    daylight_duration_seconds =  round(daily["daylight_duration"][0])
     daylight_duration = f"{daylight_duration_seconds//3600}h{(daylight_duration_seconds%3600)//60}m"
 
-    precipitation_hours = int(daily["precipitation_hours"][0])
-    precipitation_probability_max = int(daily["precipitation_probability_max"][0])
-    precipitation_sum = int(daily["precipitation_sum"][0])
+    precipitation_hours = round(daily["precipitation_hours"][0])
+    precipitation_probability_max = round(daily["precipitation_probability_max"][0])
+    precipitation_sum = round(daily["precipitation_sum"][0])
 
-    wind_speed_10m_max = int(daily["wind_speed_10m_max"][0])
-    wind_gusts_10m_max = int(daily["wind_gusts_10m_max"][0])
+    wind_speed_10m_max = round(daily["wind_speed_10m_max"][0])
+    wind_gusts_10m_max = round(daily["wind_gusts_10m_max"][0])
 
     data_string = f"Temp: {temperature_2m_min} °C - {temperature_2m_max} °C"
     data_string += f"\nFeels Like: {apparent_temperature_min} °C - {apparent_temperature_max} °C"

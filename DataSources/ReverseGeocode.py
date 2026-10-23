@@ -6,7 +6,7 @@ def reverse_geocode_label(lat_long: tuple[float,float]) -> str:
     using Nominatim reverse geocoding.
     """
     url = "https://nominatim.openstreetmap.org/reverse"
-    params = {
+    params: dict[str, str | float] = {
         "lat": lat_long[0],
         "lon": lat_long[1],
         "zoom": 12,
@@ -21,13 +21,14 @@ def reverse_geocode_label(lat_long: tuple[float,float]) -> str:
     response.raise_for_status()
 
     data = response.json()
-    return data.get("name", "Unrecognised location")
+    location_name = data.get("name")
+    if not isinstance(location_name, str) or not location_name:
+        return "Unrecognised location"
+    return location_name
 
 
 if __name__ == "__main__":
-    import os
-    from dotenv import load_dotenv
-    load_dotenv("../.env")
-    LAT_LONG = tuple(map(float, os.getenv("LAT_LONG").split(",")))
+    from config import LAT_LONG
 
     print(reverse_geocode_label(LAT_LONG))
+    

@@ -12,63 +12,69 @@ from DataSources.ReverseGeocode import reverse_geocode_label
 from DataSources.Weather import get_day_forecast
 from DataSources.Energy import get_energy_consumption
 from DataSources.Word import get_word_of_the_day
-from DataSources.News import get_headlines
+from DataSources.News import get_headlines, HEADLINES_UNAVAILABLE
 from DataSources.Wikipedia import get_wikipedia_info
 from DataSources.Burns import get_burns_poem
 import textwrap
-from datetime import datetime
 from escpos.printer import Network
 import config
+from helpers import get_today_string, safe_call
+from PIL import ImageFile
 
 PRINTER_IP = "192.168.1.165"
 PRINTER_TYPE = "TM-T88IV"
 MARGIN = 2
 
 
-def ordinal(n: int):
-    if 11 <= (n % 100) <= 13:
-        suffix = 'th'
-    else:
-        suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
-    return str(n) + suffix
-
-def get_today_string():
-    # "Monday 1st January 2026"
-    today = datetime.now()
-    return today.strftime(f"%A {ordinal(today.day)} %B %Y")
-
-def safe_call(func, *args, default="Not available", **kwargs):
-    """
-    Call a function and return a default value if it raises an exception.
-
-    Args:
-        func (callable): The function to invoke.
-        *args: Positional arguments passed to the function.
-        default (Any): Value to return if an exception is raised.
-        **kwargs: Keyword arguments passed to the function.
-
-    Returns:
-        Any: The function's return value if successful, otherwise `default`.
-    """
-    try:
-        return func(*args, **kwargs)
-    except Exception as e:
-        print(e)
-        return default
-
 # ---------- Data Gathering ----------
-location_string = safe_call(reverse_geocode_label, config.LAT_LONG, default="Unrecognised location")
-weather_block = safe_call(get_day_forecast, config.LAT_LONG, default=("Not available", "body"))
-energy_block = safe_call(get_energy_consumption,
+location_string = safe_call(
+    reverse_geocode_label,
+    config.LAT_LONG,
+    default="Unrecognised location"
+    )
+
+weather_block = safe_call(
+    get_day_forecast,
+    config.LAT_LONG,
+    default=("Not available", "body")
+    )
+
+energy_block = safe_call(
+    get_energy_consumption,
     config.ENERGY_API_KEY, config.ENERGY_PRODUCT, config.POSTCODE,
-    config.ENERGY_MPAN, config.ENERGY_MSN, default=("Not available", "body")
-)
-wotd_blocks = safe_call(get_word_of_the_day, default=[("Not available", "body")])
-national_news_thumb, national_news_blocks = safe_call(get_headlines, config.NEWS_NATIONAL, default=[("Not available", "body")])
-local_news_thumb, local_news_blocks = safe_call(get_headlines, config.NEWS_LOCAL, default=[("Not available", "body")])
-sport_thumb, sport_blocks = safe_call(get_headlines, config.NEWS_SPORT, default=[("Not available", "body")])
-wikipedia_blocks = safe_call(get_wikipedia_info, default=[("Not available", "body")])
-poem = safe_call(get_burns_poem)
+    config.ENERGY_MPAN, config.ENERGY_MSN,
+    default=("Not available", "body")
+    )
+
+wotd_blocks = safe_call(
+    get_word_of_the_day,
+    default=[("Not available", "body")]
+    )
+
+national_news_thumb, national_news_blocks = safe_call(
+    get_headlines, config.NEWS_NATIONAL,
+    default=HEADLINES_UNAVAILABLE
+    )
+
+local_news_thumb, local_news_blocks = safe_call(
+    get_headlines, config.NEWS_LOCAL,
+    default=HEADLINES_UNAVAILABLE
+    )
+
+sport_thumb, sport_blocks = safe_call(
+    get_headlines, config.NEWS_SPORT,
+    default=HEADLINES_UNAVAILABLE
+    )
+
+wikipedia_blocks = safe_call(
+    get_wikipedia_info,
+    default=[("Not available", "body")]
+    )
+
+poem = safe_call(
+    get_burns_poem,
+    default = [("Not available","body")]
+    )
 
 
 printer = Network(PRINTER_IP, profile=PRINTER_TYPE)
@@ -76,7 +82,7 @@ printer.set(font="a")
 columns = printer.profile.get_columns(font="a")
 print(columns, "columns")
 
-def print_line(text: str, style: str = None, margin: int = 2):
+def print_line(text: str, style: str | None = None, margin: int = 2) -> None:
 
     match style:
         case "heading":
@@ -101,14 +107,14 @@ def print_line(text: str, style: str = None, margin: int = 2):
         printer.text(line)
         printer.ln()
 
-def print_block(block:tuple[str,str], margin: int = 2):
+def print_block(block:tuple[str,str], margin: int = 2) -> None:
     lines = block[0].split("\n")
     for line in lines:
         wrapped_lines = textwrap.wrap(line, columns - 2 * margin)
         for wrapped_line in wrapped_lines:
             print_line(wrapped_line, block[1], margin)
 
-def print_blocks(blocks: list[tuple[str,str]], margin: int = 2):
+def print_blocks(blocks: list[tuple[str,str]], margin: int = 2) -> None:
     for block in blocks:
         print_block(block, margin)
 
@@ -136,7 +142,7 @@ print_blocks(wotd_blocks)
 printer.ln(2)
 
 # News & sport headlines helper function
-def print_headlines(heading:str, image, blocks:list[tuple[str,str]]):
+def print_headlines(heading:str, image: ImageFile.ImageFile | None, blocks:list[tuple[str,str]]) -> None:
 
     print_line(heading, "heading")
     printer.set(align="center")

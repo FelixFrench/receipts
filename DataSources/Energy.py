@@ -1,9 +1,14 @@
 # Provides a function to get the most recent 24h of energy consumption available on the Octopus Energy API
-
 import requests
 import pandas as pd
 from tabulate import tabulate
 from datetime import datetime, timedelta
+from typing import TypedDict, cast
+
+class ConsumptionReading(TypedDict):
+    consumption: float      # kWh
+    interval_start: str     # ISO 8601 timestamp
+    interval_end: str
 
 def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn: str) -> tuple[str, str]:
     """
@@ -21,11 +26,14 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
 
         results = r.json().get("results")
         if not results:
-            raise Exception("No grid supply point results returned")
+            raise ValueError(f"No grid supply point results returned for postcode {postcode}")
         
         group_id = results[0].get("group_id")
         if not group_id:
-            raise ValueError("Missing group_id in grid supply point response")
+            raise ValueError(f"Missing group_id in grid supply point response for postcode {postcode}")
+        
+        if not isinstance(group_id, str):
+            raise ValueError(f"Octopus API returned invalid group_id {group_id} for postcode {postcode}")
 
         return group_id.lstrip("_")
     
@@ -39,7 +47,7 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
     # ---------- Get rates ----------
     def get_rate(tariff: str, rate: str) -> float:
         """
-        Gets the cost in GBP of a given rate for a given tarriff and product
+        Gets the cost in GBP of a given rate for a given tariff and product
         """
 
         url = f"https://api.octopus.energy/v1/products/{product}/electricity-tariffs/{tariff}/{rate}/"
@@ -47,11 +55,11 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
 
         results = r.json().get("results")
         if not results:
-            raise Exception("No energy rate results returned")
+            raise ValueError(f"No energy rate results returned for {tariff}/{rate}")
         
         value = results[0].get("value_inc_vat")
         if value is None:
-            raise Exception("Energy rate results not as expected")
+            raise ValueError(f"Energy rate results malformed for {tariff}/{rate}")
         
         return float(value) / 100
     
@@ -62,12 +70,9 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
     dual_night_rate = get_rate(dual_tariff, "night-unit-rates")
     dual_standing_charge = get_rate(dual_tariff, "standing-charges")
 
-    #print(single_rate, single_standing_charge)
-    #print(dual_day_rate, dual_night_rate, dual_standing_charge)
-
 
     # ---------- Get consumption data from meter ----------
-    def get_last_24h_consumption() -> list:
+    def get_last_24h_consumption() -> list[ConsumptionReading]:
         """
         Requests the most recent available 24 hours (48x 30min readings) of consumption data
         """
@@ -76,7 +81,12 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
         url += "?page_size=48&order_by=-period"
 
         (r := requests.get(url, auth=(key, ''))).raise_for_status()
-        return r.json().get('results', [])
+
+        consumption = r.json().get('results')
+        if not isinstance(consumption, list):
+            raise ValueError("Octopus API returned invalid consumption data")
+        
+        return cast(list[ConsumptionReading], consumption)
     
     consumption_data = get_last_24h_consumption()
 
@@ -88,15 +98,12 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
     end_time = timeseries_df['interval_start'].max() + timedelta(minutes=30)
 
     # Extract date and time components
-    timeseries_df['date'] = timeseries_df['interval_start'].dt.normalize()
-    to_unix = lambda x: pd.to_datetime(x.total_seconds(), unit='s', origin='unix')
-    timeseries_df['time'] = to_unix((timeseries_df['interval_start'] - timeseries_df['date']).dt)
+    time_of_day = timeseries_df['interval_start'] - timeseries_df['date']   # Series of Timedeltas
+    night_start = pd.Timedelta("00:30:00")
+    day_start = pd.Timedelta("07:30:00")
+    night_mask = (time_of_day >= night_start) & (time_of_day < day_start)
+    day_mask = ~night_mask
 
-    # Define the range of the night rate period - these are in UTC like everything else
-    night_start = to_unix(pd.Timedelta("00:30:00"))
-    day_start = to_unix(pd.Timedelta("07:30:00"))
-    day_mask = (timeseries_df['time'] >= day_start) | (timeseries_df['time'] < night_start)
-    night_mask = (timeseries_df['time'] < day_start) & (timeseries_df['time'] >= night_start)
 
     # Calculate usage during day and night periods
     day_usage = timeseries_df[day_mask]['consumption'].sum()
@@ -113,7 +120,8 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
     dual_total_charge = dual_day_charge + dual_night_charge + dual_standing_charge
     single_dual_difference = single_total_charge - dual_total_charge
 
-    comparison_string = f"With a single rate tariff, this would have cost £{single_total_charge:.2f} (+£{single_dual_difference:.2f})"
+    signed_difference_str = ("+" if single_dual_difference >= 0 else "-") + f"£{abs(single_dual_difference):.2f}"
+    comparison_string = f"With a single rate tariff, this would have cost £{single_total_charge:.2f} ({signed_difference_str})"
 
     table = [
         ["Day",         f"{day_usage:.2f} ({day_usage_percent:.0f}%)",        f"£{dual_day_charge:.2f}"],
@@ -122,8 +130,8 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
         ["Total",       f"{total_usage:.2f}",                               f"£{dual_total_charge:.2f}"]
     ]
 
-    data_string = f"From {datetime.strftime(start_time, '%H:%M:%S %d/%m/%Y')}"
-    data_string += f"\nTo {datetime.strftime(end_time, '%H:%M:%S %d/%m/%Y')}"
+    data_string = f"From {start_time.strftime('%H:%M:%S %d/%m/%Y')}"
+    data_string += f"\nTo {end_time.strftime('%H:%M:%S %d/%m/%Y')}"
     data_string += "\n" + tabulate(table, headers=["", "Usage [kWh]", "Charge"])
     data_string += "\n\n" + comparison_string
 

@@ -35,7 +35,7 @@ def choose_poem()-> tuple[str, str]:
     return titles[index]
 
 
-def scrape_poem(slug) -> str:
+def scrape_poem(slug: str) -> str:
     """
     Given a poem slug, fetch the poem HTML page and extract
     plain text with blank lines separating stanzas.
@@ -80,7 +80,7 @@ def scrape_poem(slug) -> str:
     return "\n".join(poem_stanzas)
 
 
-def get_burns_poem(width = 34):
+def get_burns_poem(width: int = 34) -> list[tuple[str,str]]:
     """
     Gets today's burns poem by scraping a website
     

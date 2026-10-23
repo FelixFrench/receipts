@@ -10,12 +10,12 @@ from DataSources.ReverseGeocode import reverse_geocode_label
 from DataSources.Weather import get_day_forecast
 from DataSources.Energy import get_energy_consumption
 from DataSources.Word import get_word_of_the_day
-from DataSources.News import get_headlines
+from DataSources.News import get_headlines, HEADLINES_UNAVAILABLE
 from DataSources.Wikipedia import get_wikipedia_info
 from DataSources.Burns import get_burns_poem
-from datetime import datetime
 from time import sleep
 import config
+from helpers import get_today_string, safe_call
 
 RECEIPT_WIDTH = 42
 MARGIN = 2
@@ -23,29 +23,19 @@ width = RECEIPT_WIDTH - 2 * MARGIN
 
 
 # ---------- Data Gathering ----------
-def safe_call(func, *args, default="Not available", **kwargs):
-    """
-    Call a function and return a default value if it raises an exception.
-
-    Args:
-        func (callable): The function to invoke.
-        *args: Positional arguments passed to the function.
-        default (Any): Value to return if an exception is raised.
-        **kwargs: Keyword arguments passed to the function.
-
-    Returns:
-        Any: The function's return value if successful, otherwise `default`.
-    """
-    try:
-        return func(*args, **kwargs)
-    except Exception:
-        return default
-    
 print("Location")
-location_string = safe_call(reverse_geocode_label, config.LAT_LONG, default="Unrecognised location")
+location_string = safe_call(
+    reverse_geocode_label,
+    config.LAT_LONG,
+    default="Unrecognised location"
+    )
     
 print("Weather")
-weather = safe_call(get_day_forecast, config.LAT_LONG)
+weather = safe_call(
+    get_day_forecast,
+    config.LAT_LONG,
+    default = ("Not available","")
+    )
 
 print("Energy")
 dual_tariff_energy_data = safe_call(
@@ -54,46 +44,51 @@ dual_tariff_energy_data = safe_call(
     config.ENERGY_PRODUCT,
     config.POSTCODE,
     config.ENERGY_MPAN,
-    config.ENERGY_MSN
-)
+    config.ENERGY_MSN,
+    default = ("Not available","")
+    )
 
 print("Word")
-wotd = safe_call(get_word_of_the_day)
+wotd = safe_call(
+    get_word_of_the_day,
+    default = [("Not available","")]
+    )
 
-print("News")
+print("National news")
 _, news_headlines = safe_call(
     get_headlines,
     config.NEWS_NATIONAL,
-    default=(None, [("Not available", "body")])
-)
+    default=HEADLINES_UNAVAILABLE
+    )
+
+print("Local news")
+_, news_headlines = safe_call(
+    get_headlines,
+    config.NEWS_LOCAL,
+    default=HEADLINES_UNAVAILABLE
+    )
 
 print("Sports")
 _, sport_headlines = safe_call(
     get_headlines,
     config.NEWS_SPORT,
-    default=(None, [("Not available", "body")])
-)
+    default=HEADLINES_UNAVAILABLE
+    )
 
 print("Wikipedia")
-wikipedia_text = safe_call(get_wikipedia_info)
+wikipedia_text = safe_call(
+    get_wikipedia_info,
+    default = [("Not available","")]
+    )
 
 print("Poem")
-poem = safe_call(get_burns_poem)
+poem = safe_call(
+    get_burns_poem,
+    default = [("Not available","")]
+    )
 
 
 # ---------- Helper functions ----------
-def ordinal(n: int):
-    if 11 <= (n % 100) <= 13:
-        suffix = 'th'
-    else:
-        suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
-    return str(n) + suffix
-
-def get_today_string():
-    "Monday 1st January 2026"
-    today = datetime.now()
-    return today.strftime(f"%A {ordinal(today.day)} %B %Y")
-
 def strip_block_formatting(block: tuple[str, str]) -> str:
     return block[0]
 

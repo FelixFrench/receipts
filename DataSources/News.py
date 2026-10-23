@@ -3,12 +3,12 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from io import BytesIO
 from PIL import Image, ImageFile
-import os
-from dotenv import load_dotenv
-load_dotenv("../.env")
+
+type Headlines = tuple[ImageFile.ImageFile | None, list[tuple[str, str]]]
+HEADLINES_UNAVAILABLE: Headlines = (None, [("Not available", "body")])
 
 
-def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[tuple[str,str,str]]:
+def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[tuple[str,str,str|None]]:
     """
     Fetch up to `limit` articles from the given RSS feed
     published in the last so many hours.
@@ -29,11 +29,15 @@ def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[tuple[st
 
     cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age)
 
-    results:list[tuple[str, str, str]] = []
+    results: list[tuple[str, str, str | None]] = []
 
     for entry in feed.entries:
         if len(results) >= limit:
             break
+
+        title = entry.get("title")
+        if not isinstance(title, str):
+            continue
 
         if not hasattr(entry, "published"):
             continue
@@ -56,11 +60,11 @@ def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[tuple[st
         if "media_thumbnail" in entry and entry.media_thumbnail:
             thumbnail_url = entry.media_thumbnail[0].get("url")
 
-        results.append((entry.title, formatted_date, thumbnail_url))
+        results.append((title, formatted_date, thumbnail_url))
 
     return results
 
-def format_news(articles: tuple[str, str, str])->tuple[ImageFile.ImageFile, list[tuple[str,str]]]:
+def format_news(articles: list[tuple[str, str, str|None]]) -> Headlines:
     """
     Format output from get_recent_bbc_headlines ready for printing.
 
@@ -78,7 +82,7 @@ def format_news(articles: tuple[str, str, str])->tuple[ImageFile.ImageFile, list
             ...
         ]
     """
-    formatted = []
+    formatted: list[tuple[str, str]] = []
 
     for title, pub_date, _ in articles:
         formatted.append((title, 'body'))
@@ -87,16 +91,20 @@ def format_news(articles: tuple[str, str, str])->tuple[ImageFile.ImageFile, list
     # Try to get an image for the first article
     try:
         first_thumbnail = articles[0][2] if articles else None
-        response = requests.get(first_thumbnail)
-        response.raise_for_status()
-        image = Image.open(BytesIO(response.content))
+        if first_thumbnail:
+            response = requests.get(first_thumbnail)
+            response.raise_for_status()
+            image = Image.open(BytesIO(response.content))
+        else:
+            image = None
+
     except Exception:
         image = None
 
     return (image, formatted)
 
 
-def get_headlines(rss_url, limit=5, max_age=24):
+def get_headlines(rss_url: str, limit: int = 5, max_age: int = 24) -> Headlines:
     articles = get_headline_data(rss_url, limit, max_age)
     return format_news(articles)
 

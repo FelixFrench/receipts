@@ -1,0 +1,7 @@
+[tool.mypy]
+files = ["config.py", "helpers.py", "ReceiptPrinter.py", "ReceiptConsole.py", "DataSources"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["feedparser", "escpos.*"]
+ignore_missing_imports = true
