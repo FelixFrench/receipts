@@ -6,37 +6,23 @@ from xml.etree import ElementTree
 def get_word_of_the_day() -> list[tuple[str,str]]:
 
     rss_url = "https://wordsmith.org/awad/rss1.xml"
-    response = requests.get(rss_url)
+    response = requests.get(rss_url, timeout=10)
 
-    if response.status_code != 200:
-        print("Failed to get RSS feed. Status code:", response.status_code)
-        return ""
+    response.raise_for_status()
 
     rss_feed = response.text
 
-    # parse the RSS feed using xml.etree.ElementTree
     root = ElementTree.fromstring(rss_feed)
-    channel = root.find("channel")
-    if channel is None:
-        print("No channel found in the RSS feed")
-        return ""
 
-    item = channel.find("item")
-    if item is None:
-        print("No item found in the first entry")
-        return ""
+    title_text = root.findtext("channel/item/title")
+    if title_text is None:
+        raise Exception("No title found in the item")
 
-    title = item.find("title")
-    if title is None:
-        print("No title found in the item")
-        return ""
-        
-    description = item.find("description")
-    if item is None:
-        print("No desc found in the item")
-        return f"{title.text}"
+    description_text = root.findtext("channel/item/description")
+    if description_text is None:
+        raise Exception("No description found in the item")
 
-    return [(title.text, "body"), (description.text, "body")]
+    return [(title_text, "body"), (description_text, "body")]
 
 if __name__ == "__main__":
     wotd = get_word_of_the_day()

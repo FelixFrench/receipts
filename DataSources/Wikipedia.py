@@ -3,7 +3,7 @@
 import requests
 from datetime import datetime
 
-def get_wikipedia_info() -> str:
+def get_wikipedia_info() -> list[tuple[str, str]]:
     today = datetime.now()
 
     url = f"https://api.wikimedia.org/feed/v1/wikipedia/en/featured/{today.year}/{today.month:02d}/{today.day:02d}"

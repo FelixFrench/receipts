@@ -15,23 +15,14 @@ from DataSources.Word import get_word_of_the_day
 from DataSources.News import get_headlines
 from DataSources.Wikipedia import get_wikipedia_info
 from DataSources.Burns import get_burns_poem
-import os, textwrap
-from dotenv import load_dotenv
+import textwrap
 from datetime import datetime
 from escpos.printer import Network
+import config
 
 PRINTER_IP = "192.168.1.165"
 PRINTER_TYPE = "TM-T88IV"
 MARGIN = 2
-
-load_dotenv()
-LAT_LONG = tuple(map(float, os.getenv("LAT_LONG").split(",")))
-ENERGY_API_KEY = os.getenv("ENERGY_API_KEY")
-ENERGY_PRODUCT = os.getenv("ENERGY_PRODUCT")
-POSTCODE = os.getenv("POSTCODE")
-ENERGY_MPAN = os.getenv("ENERGY_MPAN")
-ENERGY_MSN = os.getenv("ENERGY_MSN")
-NEWSAPI_ORG_KEY = os.getenv("NEWSAPI_ORG_KEY")
 
 
 def ordinal(n: int):
@@ -66,16 +57,16 @@ def safe_call(func, *args, default="Not available", **kwargs):
         return default
 
 # ---------- Data Gathering ----------
-location_string = safe_call(reverse_geocode_label, LAT_LONG, default="Unrecognised location")
-weather_block = safe_call(get_day_forecast, LAT_LONG, default=("Not available", "body"))
+location_string = safe_call(reverse_geocode_label, config.LAT_LONG, default="Unrecognised location")
+weather_block = safe_call(get_day_forecast, config.LAT_LONG, default=("Not available", "body"))
 energy_block = safe_call(get_energy_consumption,
-    ENERGY_API_KEY, ENERGY_PRODUCT, POSTCODE,
-    ENERGY_MPAN, ENERGY_MSN, default=("Not available", "body")
+    config.ENERGY_API_KEY, config.ENERGY_PRODUCT, config.POSTCODE,
+    config.ENERGY_MPAN, config.ENERGY_MSN, default=("Not available", "body")
 )
 wotd_blocks = safe_call(get_word_of_the_day, default=[("Not available", "body")])
-national_news_thumb, national_news_blocks = safe_call(get_headlines, os.getenv("NEWS_NATIONAL"), default=[("Not available", "body")])
-local_news_thumb, local_news_blocks = safe_call(get_headlines, os.getenv("NEWS_LOCAL"), default=[("Not available", "body")])
-sport_thumb, sport_blocks = safe_call(get_headlines, os.getenv("NEWS_SPORT"), default=[("Not available", "body")])
+national_news_thumb, national_news_blocks = safe_call(get_headlines, config.NEWS_NATIONAL, default=[("Not available", "body")])
+local_news_thumb, local_news_blocks = safe_call(get_headlines, config.NEWS_LOCAL, default=[("Not available", "body")])
+sport_thumb, sport_blocks = safe_call(get_headlines, config.NEWS_SPORT, default=[("Not available", "body")])
 wikipedia_blocks = safe_call(get_wikipedia_info, default=[("Not available", "body")])
 poem = safe_call(get_burns_poem)
 

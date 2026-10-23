@@ -29,7 +29,7 @@ def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[tuple[st
 
     cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age)
 
-    results = []
+    results:list[tuple[str, str, str]] = []
 
     for entry in feed.entries:
         if len(results) >= limit:
@@ -103,11 +103,14 @@ def get_headlines(rss_url, limit=5, max_age=24):
 
 if __name__ == "__main__":
 
+    from config import NEWS_NATIONAL, NEWS_LOCAL, NEWS_SPORT
+    
+
     # Load in RSS feed urls
     feeds = [
-        os.getenv("NEWS_NATIONAL"),
-        os.getenv("NEWS_LOCAL"),
-        os.getenv("NEWS_SPORT"),
+        NEWS_NATIONAL,
+        NEWS_LOCAL,
+        NEWS_SPORT,
     ]
 
     for feed_url in feeds:
@@ -120,4 +123,9 @@ if __name__ == "__main__":
             print(f"Thumbnail: {thumbnail}")
             print("-" * 40)
 
-        print(format_news(articles))
+        _, news_formatted = format_news(articles)
+
+        print("\n\n")
+        for block in news_formatted:
+            print(block[0])
+        print("\n\n")

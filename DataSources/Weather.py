@@ -13,7 +13,7 @@ def fetch_weather_data(lat_long: tuple[float, float]) -> dict:
     url = "https://api.open-meteo.com/v1/forecast"
     today_str = datetime.now().strftime("%Y-%m-%d")
 
-    request_payload = {
+    request_payload: dict[str, str | float] = {
         "latitude": lat_long[0],
         "longitude": lat_long[1],
         "start_date": today_str,
@@ -25,13 +25,13 @@ def fetch_weather_data(lat_long: tuple[float, float]) -> dict:
         "timezone":"auto"
     }
 
-    response = requests.get(url,params=request_payload)
+    response = requests.get(url, params=request_payload)
     response.raise_for_status()
     return response.json()
 
 def format_weather_data(data: dict) -> str:
 
-    daily = data.get("daily")
+    daily = data["daily"]
 
     temperature_2m_max = int(daily["temperature_2m_max"][0])
     temperature_2m_min = int(daily["temperature_2m_min"][0])
@@ -59,17 +59,15 @@ def format_weather_data(data: dict) -> str:
     return data_string
 
 
-def get_day_forecast(lat_long: tuple[float, float]) -> str:
+def get_day_forecast(lat_long: tuple[float, float]) -> tuple[str, str]:
 
     data = fetch_weather_data(lat_long)
     return (format_weather_data(data), "body")
 
 
 if __name__ == "__main__":
-    import os
-    from dotenv import load_dotenv
-    load_dotenv("../.env")
-    LAT_LONG = tuple(map(float, os.getenv("LAT_LONG").split(",")))
+    
+    from config import LAT_LONG
 
     forecast = get_day_forecast(LAT_LONG)
 

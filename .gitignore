@@ -2,3 +2,4 @@
 .env
 DataSources/test.py
 .cache
+*.pyc

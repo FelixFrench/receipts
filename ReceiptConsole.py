@@ -15,20 +15,11 @@ from DataSources.Wikipedia import get_wikipedia_info
 from DataSources.Burns import get_burns_poem
 from datetime import datetime
 from time import sleep
-from dotenv import load_dotenv
+import config
 
 RECEIPT_WIDTH = 42
 MARGIN = 2
 width = RECEIPT_WIDTH - 2 * MARGIN
-
-load_dotenv()
-LAT_LONG = tuple(map(float, os.getenv("LAT_LONG").split(",")))
-ENERGY_API_KEY = os.getenv("ENERGY_API_KEY")
-ENERGY_PRODUCT = os.getenv("ENERGY_PRODUCT")
-POSTCODE = os.getenv("POSTCODE")
-ENERGY_MPAN = os.getenv("ENERGY_MPAN")
-ENERGY_MSN = os.getenv("ENERGY_MSN")
-NEWSAPI_ORG_KEY = os.getenv("NEWSAPI_ORG_KEY")
 
 
 # ---------- Data Gathering ----------
@@ -51,43 +42,40 @@ def safe_call(func, *args, default="Not available", **kwargs):
         return default
     
 print("Location")
-location_string = safe_call(reverse_geocode_label, LAT_LONG, default="Unrecognised location")
+location_string = safe_call(reverse_geocode_label, config.LAT_LONG, default="Unrecognised location")
     
 print("Weather")
-weather = safe_call(get_day_forecast, LAT_LONG)
+weather = safe_call(get_day_forecast, config.LAT_LONG)
 
 print("Energy")
 dual_tariff_energy_data = safe_call(
     get_energy_consumption,
-    ENERGY_API_KEY,
-    ENERGY_PRODUCT,
-    POSTCODE,
-    ENERGY_MPAN,
-    ENERGY_MSN,
-    width
+    config.ENERGY_API_KEY,
+    config.ENERGY_PRODUCT,
+    config.POSTCODE,
+    config.ENERGY_MPAN,
+    config.ENERGY_MSN
 )
 
 print("Word")
-wotd = safe_call(get_word_of_the_day, 34)
+wotd = safe_call(get_word_of_the_day)
 
 print("News")
-news_headlines = safe_call(
+_, news_headlines = safe_call(
     get_headlines,
-    NEWSAPI_ORG_KEY,
-    "bbc-news",
-    width
+    config.NEWS_NATIONAL,
+    default=(None, [("Not available", "body")])
 )
 
 print("Sports")
-sport_headlines = safe_call(
+_, sport_headlines = safe_call(
     get_headlines,
-    NEWSAPI_ORG_KEY,
-    "bbc-sport",
-    width
+    config.NEWS_SPORT,
+    default=(None, [("Not available", "body")])
 )
 
 print("Wikipedia")
-wikipedia_text = safe_call(get_wikipedia_info, width)
+wikipedia_text = safe_call(get_wikipedia_info)
 
 print("Poem")
 poem = safe_call(get_burns_poem)
@@ -106,38 +94,42 @@ def get_today_string():
     today = datetime.now()
     return today.strftime(f"%A {ordinal(today.day)} %B %Y")
 
+def strip_block_formatting(block: tuple[str, str]) -> str:
+    return block[0]
 
+def strip_blocks_formatting(blocks: list[tuple[str, str]]) -> str:
+    return "\n".join([strip_block_formatting(block) for block in blocks])
 
 # ---------- Printing ----------
 output = (" " + get_today_string() + " ").center(width, "=") + "\n"
 output += (location_string).center(width) + "\n\n"
 
 output += " WEATHER ".center(width, "=") + "\n"
-output += weather
+output += strip_block_formatting(weather)
 output += "\n\n"
 
 output += " ENERGY CONSUMPTION ".center(width, "=") + "\n"
-output += dual_tariff_energy_data
+output += strip_block_formatting(dual_tariff_energy_data)
 output += "\n\n"
 
 output += " WORD OF THE DAY ".center(width, "=") + "\n"
-output += wotd
+output += strip_blocks_formatting(wotd)
 output += "\n\n"
 
 output += " NEWS ".center(width, "=") + "\n"
-output += news_headlines
+output += strip_blocks_formatting(news_headlines)
 output += "\n\n"
 
 output += " SPORTS ".center(width, "=") + "\n"
-output += sport_headlines
+output += strip_blocks_formatting(sport_headlines)
 output += "\n\n"
 
 output += " WIKIPEDIA ".center(width, "=") + "\n"
-output += wikipedia_text
+output += strip_blocks_formatting(wikipedia_text)
 output += "\n\n"
 
 output += " TODAY'S BURNS POEM ".center(width, "=") + "\n"
-output += poem
+output += strip_blocks_formatting(poem)
 output += "\n\n"
 
 output_lines = output.splitlines()
