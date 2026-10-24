@@ -141,11 +141,13 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
 
 
 if __name__ == "__main__":
-    from config import ENERGY_API_KEY, ENERGY_PRODUCT, POSTCODE, ENERGY_MPAN, ENERGY_MSN
+    from config import load_config
+
+    cfg = load_config()
 
     energy_data = get_energy_consumption(
-        ENERGY_API_KEY, ENERGY_PRODUCT, POSTCODE,
-        ENERGY_MPAN, ENERGY_MSN
+        cfg.energy_api_key, cfg.energy_product, cfg.postcode,
+        cfg.energy_mpan, cfg.energy_msn
     )
 
     print("\n\n")

@@ -29,7 +29,9 @@ def reverse_geocode_label(lat_long: tuple[float,float]) -> str:
 
 
 if __name__ == "__main__":
-    from config import LAT_LONG
+    from config import load_config
 
-    print(reverse_geocode_label(LAT_LONG))
+    cfg = load_config()
+
+    print(reverse_geocode_label(cfg.lat_long))
     

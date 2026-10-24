@@ -1,6 +1,21 @@
 from dotenv import load_dotenv
 import os
 from pathlib import Path
+from dataclasses import dataclass
+
+ENV_FILE = Path(__file__).parent / ".env"
+
+@dataclass(frozen=True)
+class Config:
+    lat_long: tuple[float, float]
+    energy_api_key: str
+    energy_product: str
+    postcode: str
+    energy_mpan: str
+    energy_msn: str
+    news_national: str
+    news_local: str
+    news_sport: str
 
 def require_env(name: str) -> str:
     value = os.getenv(name)
@@ -24,13 +39,16 @@ def parse_lat_long(value: str | None) -> tuple[float, float]:
 
     return (lat, lon)
 
-load_dotenv(Path(__file__).parent / ".env")
-LAT_LONG = parse_lat_long(os.getenv("LAT_LONG"))
-ENERGY_API_KEY = require_env("ENERGY_API_KEY")
-ENERGY_PRODUCT = require_env("ENERGY_PRODUCT")
-POSTCODE = require_env("POSTCODE")
-ENERGY_MPAN = require_env("ENERGY_MPAN")
-ENERGY_MSN = require_env("ENERGY_MSN")
-NEWS_NATIONAL = require_env("NEWS_NATIONAL")
-NEWS_LOCAL = require_env("NEWS_LOCAL")
-NEWS_SPORT = require_env("NEWS_SPORT")
+def load_config(env_file: Path = ENV_FILE) -> Config:
+    load_dotenv(env_file)
+    return Config(
+        lat_long = parse_lat_long(os.getenv("LAT_LONG")),
+        energy_api_key = require_env("ENERGY_API_KEY"),
+        energy_product = require_env("ENERGY_PRODUCT"),
+        postcode = require_env("POSTCODE"),
+        energy_mpan = require_env("ENERGY_MPAN"),
+        energy_msn = require_env("ENERGY_MSN"),
+        news_national = require_env("NEWS_NATIONAL"),
+        news_local = require_env("NEWS_LOCAL"),
+        news_sport = require_env("NEWS_SPORT")
+    )

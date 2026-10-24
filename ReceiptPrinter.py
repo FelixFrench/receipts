@@ -18,7 +18,7 @@ from DataSources.Burns import get_burns_poem
 import textwrap
 from escpos.escpos import Escpos
 from escpos.printer import Network
-import config
+from config import load_config
 from helpers import get_today_string, safe_call
 from blocks import Block, Style
 from typing import assert_never
@@ -82,26 +82,28 @@ def print_headlines(printer: Escpos, heading: str, headlines: Headlines) -> None
 
 def main() -> None:
 
+    cfg = load_config()
+
     # Try to connect and set the font - will raise if printer offline, avoiding API calls
     printer = Network(PRINTER_IP, profile=PRINTER_TYPE)
     printer.set(font=FONT)
 
     location_string = safe_call(
         reverse_geocode_label,
-        config.LAT_LONG,
+        cfg.lat_long,
         default="Unrecognised location"
         )
 
     weather_block = safe_call(
         get_day_forecast,
-        config.LAT_LONG,
+        cfg.lat_long,
         default=Block("Not available")
         )
 
     energy_block = safe_call(
         get_energy_consumption,
-        config.ENERGY_API_KEY, config.ENERGY_PRODUCT, config.POSTCODE,
-        config.ENERGY_MPAN, config.ENERGY_MSN,
+        cfg.energy_api_key, cfg.energy_product, cfg.postcode,
+        cfg.energy_mpan, cfg.energy_msn,
         default=Block("Not available")
         )
 
@@ -111,17 +113,17 @@ def main() -> None:
         )
 
     national_news_headlines = safe_call(
-        get_headlines, config.NEWS_NATIONAL,
+        get_headlines, cfg.news_national,
         default=HEADLINES_UNAVAILABLE
         )
 
     local_news_headlines = safe_call(
-        get_headlines, config.NEWS_LOCAL,
+        get_headlines, cfg.news_local,
         default=HEADLINES_UNAVAILABLE
         )
 
     sport_headlines = safe_call(
-        get_headlines, config.NEWS_SPORT,
+        get_headlines, cfg.news_sport,
         default=HEADLINES_UNAVAILABLE
         )
 

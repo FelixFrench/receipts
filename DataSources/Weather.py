@@ -101,9 +101,11 @@ def get_day_forecast(lat_long: tuple[float, float]) -> Block:
 
 if __name__ == "__main__":
     
-    from config import LAT_LONG
+    from config import load_config
 
-    forecast = get_day_forecast(LAT_LONG)
+    cfg = load_config()
+
+    forecast = get_day_forecast(cfg.lat_long)
 
     print("\n\n")
     print(forecast.text)

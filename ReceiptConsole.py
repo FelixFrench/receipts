@@ -14,7 +14,7 @@ from DataSources.News import get_headlines, Headlines, HEADLINES_UNAVAILABLE
 from DataSources.Wikipedia import get_wikipedia_info
 from DataSources.Burns import get_burns_poem
 from time import sleep
-import config
+from config import load_config
 from helpers import get_today_string, safe_call
 from blocks import Block
 
@@ -28,28 +28,31 @@ def strip_blocks_formatting(blocks: list[Block]) -> str:
 
 
 def main() -> None:
+
+    cfg = load_config()
+
     print("Location")
     location_string = safe_call(
         reverse_geocode_label,
-        config.LAT_LONG,
+        cfg.lat_long,
         default="Unrecognised location"
         )
 
     print("Weather")
     weather = safe_call(
         get_day_forecast,
-        config.LAT_LONG,
+        cfg.lat_long,
         default = Block("Not available")
         )
 
     print("Energy")
     dual_tariff_energy_data = safe_call(
         get_energy_consumption,
-        config.ENERGY_API_KEY,
-        config.ENERGY_PRODUCT,
-        config.POSTCODE,
-        config.ENERGY_MPAN,
-        config.ENERGY_MSN,
+        cfg.energy_api_key,
+        cfg.energy_product,
+        cfg.postcode,
+        cfg.energy_mpan,
+        cfg.energy_msn,
         default = Block("Not available")
         )
 
@@ -62,21 +65,21 @@ def main() -> None:
     print("National news")
     national_news_headlines = safe_call(
         get_headlines,
-        config.NEWS_NATIONAL,
+        cfg.news_national,
         default=HEADLINES_UNAVAILABLE
         )
 
     print("Local news")
     local_news_headlines = safe_call(
         get_headlines,
-        config.NEWS_LOCAL,
+        cfg.news_local,
         default=HEADLINES_UNAVAILABLE
         )
 
     print("Sport")
     sport_headlines = safe_call(
         get_headlines,
-        config.NEWS_SPORT,
+        cfg.news_sport,
         default=HEADLINES_UNAVAILABLE
         )
 

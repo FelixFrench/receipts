@@ -113,14 +113,16 @@ def get_headlines(rss_url: str, limit: int = 5, max_age: int = 24) -> Headlines:
 
 if __name__ == "__main__":
 
-    from config import NEWS_NATIONAL, NEWS_LOCAL, NEWS_SPORT
+    from config import load_config
+
+    cfg = load_config()
     
 
     # Load in RSS feed urls
     feeds = [
-        NEWS_NATIONAL,
-        NEWS_LOCAL,
-        NEWS_SPORT,
+        cfg.news_national,
+        cfg.news_local,
+        cfg.news_sport,
     ]
 
     for feed_url in feeds:
