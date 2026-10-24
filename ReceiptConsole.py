@@ -20,116 +20,119 @@ from blocks import Block
 
 RECEIPT_WIDTH = 42
 MARGIN = 2
-width = RECEIPT_WIDTH - 2 * MARGIN
+WIDTH = RECEIPT_WIDTH - 2 * MARGIN
 
 
-# ---------- Data Gathering ----------
-print("Location")
-location_string = safe_call(
-    reverse_geocode_label,
-    config.LAT_LONG,
-    default="Unrecognised location"
-    )
-    
-print("Weather")
-weather = safe_call(
-    get_day_forecast,
-    config.LAT_LONG,
-    default = Block("Not available")
-    )
-
-print("Energy")
-dual_tariff_energy_data = safe_call(
-    get_energy_consumption,
-    config.ENERGY_API_KEY,
-    config.ENERGY_PRODUCT,
-    config.POSTCODE,
-    config.ENERGY_MPAN,
-    config.ENERGY_MSN,
-    default = Block("Not available")
-    )
-
-print("Word")
-wotd = safe_call(
-    get_word_of_the_day,
-    default = [Block("Not available")]
-    )
-
-print("National news")
-national_news_headlines = safe_call(
-    get_headlines,
-    config.NEWS_NATIONAL,
-    default=HEADLINES_UNAVAILABLE
-    )
-
-print("Local news")
-local_news_headlines = safe_call(
-    get_headlines,
-    config.NEWS_LOCAL,
-    default=HEADLINES_UNAVAILABLE
-    )
-
-print("Sports")
-sport_headlines = safe_call(
-    get_headlines,
-    config.NEWS_SPORT,
-    default=HEADLINES_UNAVAILABLE
-    )
-
-print("Wikipedia")
-wikipedia_text = safe_call(
-    get_wikipedia_info,
-    default = [Block("Not available")]
-    )
-
-print("Poem")
-poem = safe_call(
-    get_burns_poem,
-    default = [Block("Not available")]
-    )
-
-
-# ---------- Helper functions ----------
 def strip_blocks_formatting(blocks: list[Block]) -> str:
     return "\n".join([block.text for block in blocks])
 
-# ---------- Printing ----------
-output = (" " + get_today_string() + " ").center(width, "=") + "\n"
-output += (location_string).center(width) + "\n\n"
 
-output += " WEATHER ".center(width, "=") + "\n"
-output += weather.text
-output += "\n\n"
+def main() -> None:
+    print("Location")
+    location_string = safe_call(
+        reverse_geocode_label,
+        config.LAT_LONG,
+        default="Unrecognised location"
+        )
 
-output += " ENERGY CONSUMPTION ".center(width, "=") + "\n"
-output += dual_tariff_energy_data.text
-output += "\n\n"
+    print("Weather")
+    weather = safe_call(
+        get_day_forecast,
+        config.LAT_LONG,
+        default = Block("Not available")
+        )
 
-output += " WORD OF THE DAY ".center(width, "=") + "\n"
-output += strip_blocks_formatting(wotd)
-output += "\n\n"
+    print("Energy")
+    dual_tariff_energy_data = safe_call(
+        get_energy_consumption,
+        config.ENERGY_API_KEY,
+        config.ENERGY_PRODUCT,
+        config.POSTCODE,
+        config.ENERGY_MPAN,
+        config.ENERGY_MSN,
+        default = Block("Not available")
+        )
 
-output += " NATIONAL NEWS ".center(width, "=") + "\n"
-output += strip_blocks_formatting(national_news_headlines.blocks)
-output += "\n\n"
+    print("Word")
+    wotd = safe_call(
+        get_word_of_the_day,
+        default = [Block("Not available")]
+        )
 
-output += " LOCAL NEWS ".center(width, "=") + "\n"
-output += strip_blocks_formatting(local_news_headlines.blocks)
-output += "\n\n"
+    print("National news")
+    national_news_headlines = safe_call(
+        get_headlines,
+        config.NEWS_NATIONAL,
+        default=HEADLINES_UNAVAILABLE
+        )
 
-output += " SPORTS ".center(width, "=") + "\n"
-output += strip_blocks_formatting(sport_headlines.blocks)
-output += "\n\n"
+    print("Local news")
+    local_news_headlines = safe_call(
+        get_headlines,
+        config.NEWS_LOCAL,
+        default=HEADLINES_UNAVAILABLE
+        )
 
-output += " WIKIPEDIA ".center(width, "=") + "\n"
-output += strip_blocks_formatting(wikipedia_text)
-output += "\n\n"
+    print("Sport")
+    sport_headlines = safe_call(
+        get_headlines,
+        config.NEWS_SPORT,
+        default=HEADLINES_UNAVAILABLE
+        )
 
-output += " TODAY'S BURNS POEM ".center(width, "=") + "\n"
-output += strip_blocks_formatting(poem)
-output += "\n\n"
+    print("Wikipedia")
+    wikipedia_text = safe_call(
+        get_wikipedia_info,
+        default = [Block("Not available")]
+        )
 
-output_lines = output.splitlines()
-for line in output_lines:
-    print(line[:width])
-    sleep(0.02)
+    print("Poem")
+    poem = safe_call(
+        get_burns_poem,
+        default = [Block("Not available")]
+        )
+
+
+    # ---------- Printing ----------
+    output = (" " + get_today_string() + " ").center(WIDTH, "=") + "\n"
+    output += (location_string).center(WIDTH) + "\n\n"
+
+    output += " WEATHER ".center(WIDTH, "=") + "\n"
+    output += weather.text
+    output += "\n\n"
+
+    output += " ENERGY CONSUMPTION ".center(WIDTH, "=") + "\n"
+    output += dual_tariff_energy_data.text
+    output += "\n\n"
+
+    output += " WORD OF THE DAY ".center(WIDTH, "=") + "\n"
+    output += strip_blocks_formatting(wotd)
+    output += "\n\n"
+
+    output += " NATIONAL NEWS ".center(WIDTH, "=") + "\n"
+    output += strip_blocks_formatting(national_news_headlines.blocks)
+    output += "\n\n"
+
+    output += " LOCAL NEWS ".center(WIDTH, "=") + "\n"
+    output += strip_blocks_formatting(local_news_headlines.blocks)
+    output += "\n\n"
+
+    output += " SPORT ".center(WIDTH, "=") + "\n"
+    output += strip_blocks_formatting(sport_headlines.blocks)
+    output += "\n\n"
+
+    output += " WIKIPEDIA ".center(WIDTH, "=") + "\n"
+    output += strip_blocks_formatting(wikipedia_text)
+    output += "\n\n"
+
+    output += " TODAY'S BURNS POEM ".center(WIDTH, "=") + "\n"
+    output += strip_blocks_formatting(poem)
+    output += "\n\n"
+
+    output_lines = output.splitlines()
+    for line in output_lines:
+        print(line[:WIDTH])
+        sleep(0.02)
+
+if __name__ == "__main__":
+    main()
