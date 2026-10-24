@@ -2,8 +2,9 @@
 
 import requests
 from datetime import datetime
+from blocks import Block, Style
 
-def get_wikipedia_info() -> list[tuple[str, str]]:
+def get_wikipedia_info() -> list[Block]:
     today = datetime.now()
 
     url = f"https://api.wikimedia.org/feed/v1/wikipedia/en/featured/{today.year}/{today.month:02d}/{today.day:02d}"
@@ -22,15 +23,15 @@ def get_wikipedia_info() -> list[tuple[str, str]]:
     # Most read articles
     mostread = data.get("mostread")["articles"][:5]
 
-    blocks = [("Today's featured article", "subheading")]
-    blocks.append((tfa_title, "body"))
-    blocks.append((tfa_extract, "body"))
-    blocks.append(("-", "subheading"))
-    blocks.append(("Most read articles", "subheading"))
+    blocks = [Block("Today's featured article", Style.SUBHEADING)]
+    blocks.append(Block(tfa_title))
+    blocks.append(Block(tfa_extract))
+    blocks.append(Block("-", Style.SUBHEADING))
+    blocks.append(Block("Most read articles", Style.SUBHEADING))
     for mr in mostread:
-        blocks.append((mr["titles"]["normalized"], "body"))
-        blocks.append((mr["description"], "body"))
-        blocks.append(("(" + str(mr["views"]) + " views)", "rightAlign"))
+        blocks.append(Block(mr["titles"]["normalized"]))
+        blocks.append(Block(mr["description"]))
+        blocks.append(Block("(" + str(mr["views"]) + " views)", Style.RIGHT_ALIGN))
 
     return blocks
 
@@ -39,5 +40,5 @@ if __name__ == "__main__":
 
     print("\n\n")
     for block in wikipedia_info:
-        print(block[0])
+        print(block.text)
     print("\n\n")

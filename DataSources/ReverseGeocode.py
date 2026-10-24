@@ -24,6 +24,7 @@ def reverse_geocode_label(lat_long: tuple[float,float]) -> str:
     location_name = data.get("name")
     if not isinstance(location_name, str) or not location_name:
         return "Unrecognised location"
+
     return location_name
 
 

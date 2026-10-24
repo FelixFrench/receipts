@@ -1,6 +1,7 @@
 [tool.mypy]
-files = ["config.py", "helpers.py", "ReceiptPrinter.py", "ReceiptConsole.py", "DataSources"]
+files = ["config.py", "helpers.py", "ReceiptPrinter.py", "ReceiptConsole.py", "DataSources", "blocks.py"]
 strict = true
+enable_error_code = ["possibly-undefined"]
 
 [[tool.mypy.overrides]]
 module = ["feedparser", "escpos.*"]

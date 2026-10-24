@@ -3,12 +3,23 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from io import BytesIO
 from PIL import Image, ImageFile
+from blocks import Block, Style
+from dataclasses import dataclass
 
-type Headlines = tuple[ImageFile.ImageFile | None, list[tuple[str, str]]]
-HEADLINES_UNAVAILABLE: Headlines = (None, [("Not available", "body")])
+@dataclass(frozen=True)
+class Headlines:
+    blocks: list[Block]
+    image: ImageFile.ImageFile | None = None
 
+HEADLINES_UNAVAILABLE = Headlines([Block("Not available")])
 
-def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[tuple[str,str,str|None]]:
+@dataclass(frozen=True)
+class Article:
+    title: str
+    pub_date: str
+    thumb_url: str | None
+
+def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[Article]:
     """
     Fetch up to `limit` articles from the given RSS feed
     published in the last so many hours.
@@ -29,7 +40,7 @@ def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[tuple[st
 
     cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age)
 
-    results: list[tuple[str, str, str | None]] = []
+    results: list[Article] = []
 
     for entry in feed.entries:
         if len(results) >= limit:
@@ -60,48 +71,39 @@ def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[tuple[st
         if "media_thumbnail" in entry and entry.media_thumbnail:
             thumbnail_url = entry.media_thumbnail[0].get("url")
 
-        results.append((title, formatted_date, thumbnail_url))
+        results.append(Article(title, formatted_date, thumbnail_url))
 
     return results
 
-def format_news(articles: list[tuple[str, str, str|None]]) -> Headlines:
+def format_news(articles: list[Article]) -> Headlines:
     """
-    Format output from get_recent_bbc_headlines ready for printing.
+    Format output from get_headline_data ready for printing.
 
     Args:
-        articles: List of tuples:
-                  (title, formatted_pubDate, media_thumbnail_url)
+        articles: List of Article
 
     Returns:
-        (first_thumbnail_url, formatted_list)
-
-        formatted_list: [
-            (headline 1, 'body'),
-            (date 1, 'rightAlign'),
-            (headline 2, 'body'),
-            ...
-        ]
+        Headlines
     """
-    formatted: list[tuple[str, str]] = []
+    
+    blocks = []
+    image = None
 
-    for title, pub_date, _ in articles:
-        formatted.append((title, 'body'))
-        formatted.append((pub_date, 'rightAlign'))
+    for a in articles:
+        blocks.append(Block(a.title))
+        blocks.append(Block(a.pub_date, Style.RIGHT_ALIGN))
 
     # Try to get an image for the first article
     try:
-        first_thumbnail = articles[0][2] if articles else None
+        first_thumbnail = articles[0].thumb_url if articles else None
         if first_thumbnail:
             response = requests.get(first_thumbnail)
             response.raise_for_status()
             image = Image.open(BytesIO(response.content))
-        else:
-            image = None
-
     except Exception:
-        image = None
+        pass
 
-    return (image, formatted)
+    return Headlines(blocks, image)
 
 
 def get_headlines(rss_url: str, limit: int = 5, max_age: int = 24) -> Headlines:
@@ -125,15 +127,15 @@ if __name__ == "__main__":
         print(f"\nFeed: {feed_url}\n")
         articles = get_headline_data(feed_url)
 
-        for title, pub_date, thumbnail in articles:
-            print(f"Title: {title}")
-            print(f"Published: {pub_date}")
-            print(f"Thumbnail: {thumbnail}")
+        for a in articles:
+            print(f"Title: {a.title}")
+            print(f"Published: {a.pub_date}")
+            print(f"Thumbnail: {a.thumb_url}")
             print("-" * 40)
 
-        _, news_formatted = format_news(articles)
+        headlines = format_news(articles)
 
         print("\n\n")
-        for block in news_formatted:
-            print(block[0])
+        for block in headlines.blocks:
+            print(block.text)
         print("\n\n")

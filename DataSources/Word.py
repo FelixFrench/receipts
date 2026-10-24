@@ -2,8 +2,9 @@
 
 import requests
 from xml.etree import ElementTree
+from blocks import Block
 
-def get_word_of_the_day() -> list[tuple[str,str]]:
+def get_word_of_the_day() -> list[Block]:
 
     rss_url = "https://wordsmith.org/awad/rss1.xml"
     response = requests.get(rss_url, timeout=10)
@@ -22,12 +23,12 @@ def get_word_of_the_day() -> list[tuple[str,str]]:
     if description_text is None:
         raise Exception("No description found in the item")
 
-    return [(title_text, "body"), (description_text, "body")]
+    return [Block(title_text), Block(description_text)]
 
 if __name__ == "__main__":
     wotd = get_word_of_the_day()
 
     print("\n\n")
     for block in wotd:
-        print(block[0])
+        print(block.text)
     print("\n\n")

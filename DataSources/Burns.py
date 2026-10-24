@@ -4,6 +4,8 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 import textwrap
+from blocks import Block, Style
+from dataclasses import dataclass
 
 # Base site URL
 BASE_URL = "https://robertburns.org"
@@ -11,8 +13,13 @@ BASE_URL = "https://robertburns.org"
 # JSON endpoint containing the list of works
 JSON_URL = f"{BASE_URL}/static/json/works_app/works_list.json"
 
+@dataclass(frozen=True)
+class PoemID:
+    title: str
+    slug: str
 
-def choose_poem()-> tuple[str, str]:
+
+def choose_poem()-> PoemID:
     """
     Selects a poem from robertburns.org
     The chosen poem changes once per day
@@ -24,7 +31,7 @@ def choose_poem()-> tuple[str, str]:
     response.raise_for_status()
 
     works = response.json()
-    titles = [(work["title"], work["slug"]) for work in works]
+    titles = [PoemID(work["title"], work["slug"]) for work in works]
 
     # Rotate through one poem per day
     today = datetime.now(timezone.utc).date()
@@ -80,17 +87,17 @@ def scrape_poem(slug: str) -> str:
     return "\n".join(poem_stanzas)
 
 
-def get_burns_poem(width: int = 34) -> list[tuple[str,str]]:
+def get_burns_poem(width: int = 34) -> list[Block]:
     """
     Gets today's burns poem by scraping a website
     
     param width: The maximum line length in chars
-    Returns a multiline string
+    Returns a list of blocks
     """
     
-    (title, slug) = choose_poem()
-    blocks = [(title, "subheading")]
-    poem_text = scrape_poem(slug)
+    poem_id = choose_poem()
+    blocks = [Block(poem_id.title, Style.SUBHEADING)]
+    poem_text = scrape_poem(poem_id.slug)
 
     wrapped_lines = []
 
@@ -110,8 +117,8 @@ def get_burns_poem(width: int = 34) -> list[tuple[str,str]]:
 
         wrapped_lines.extend(wrapped)
 
-    blocks.extend([(line, "body") for line in wrapped_lines])
-    return blocks#title.center(width) + "\n\n" + "\n".join(wrapped_lines)
+    blocks.extend([Block(line) for line in wrapped_lines])
+    return blocks
 
 
 if __name__ == "__main__":
@@ -120,5 +127,5 @@ if __name__ == "__main__":
     
     print("\n\n")
     for block in poem:
-        print(block[0])
+        print(block.text)
     print("\n\n")

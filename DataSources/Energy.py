@@ -4,13 +4,14 @@ import pandas as pd
 from tabulate import tabulate
 from datetime import datetime, timedelta
 from typing import TypedDict, cast
+from blocks import Block
 
 class ConsumptionReading(TypedDict):
     consumption: float      # kWh
     interval_start: str     # ISO 8601 timestamp
     interval_end: str
 
-def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn: str) -> tuple[str, str]:
+def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn: str) -> Block:
     """
     Creates a formatted block of text giving information on recent energy consumption for one metering point
     """
@@ -136,7 +137,7 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
     data_string += "\n" + tabulate(table, headers=["", "Usage [kWh]", "Charge"])
     data_string += "\n\n" + comparison_string
 
-    return (data_string, "body")
+    return Block(data_string)
 
 
 if __name__ == "__main__":
@@ -148,5 +149,5 @@ if __name__ == "__main__":
     )
 
     print("\n\n")
-    print(energy_data[0])
+    print(energy_data.text)
     print("\n\n")
