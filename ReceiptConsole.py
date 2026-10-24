@@ -55,14 +55,14 @@ wotd = safe_call(
     )
 
 print("National news")
-_, news_headlines = safe_call(
+_, national_news_headlines = safe_call(
     get_headlines,
     config.NEWS_NATIONAL,
     default=HEADLINES_UNAVAILABLE
     )
 
 print("Local news")
-_, news_headlines = safe_call(
+_, local_news_headlines = safe_call(
     get_headlines,
     config.NEWS_LOCAL,
     default=HEADLINES_UNAVAILABLE
@@ -111,8 +111,12 @@ output += " WORD OF THE DAY ".center(width, "=") + "\n"
 output += strip_blocks_formatting(wotd)
 output += "\n\n"
 
-output += " NEWS ".center(width, "=") + "\n"
-output += strip_blocks_formatting(news_headlines)
+output += " NATIONAL NEWS ".center(width, "=") + "\n"
+output += strip_blocks_formatting(national_news_headlines)
+output += "\n\n"
+
+output += " LOCAL NEWS ".center(width, "=") + "\n"
+output += strip_blocks_formatting(local_news_headlines)
 output += "\n\n"
 
 output += " SPORTS ".center(width, "=") + "\n"

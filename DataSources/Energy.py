@@ -98,7 +98,8 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
     end_time = timeseries_df['interval_start'].max() + timedelta(minutes=30)
 
     # Extract date and time components
-    time_of_day = timeseries_df['interval_start'] - timeseries_df['date']   # Series of Timedeltas
+    date = timeseries_df['interval_start'].dt.normalize()
+    time_of_day = timeseries_df['interval_start'] - date   # Series of Timedeltas
     night_start = pd.Timedelta("00:30:00")
     day_start = pd.Timedelta("07:30:00")
     night_mask = (time_of_day >= night_start) & (time_of_day < day_start)
