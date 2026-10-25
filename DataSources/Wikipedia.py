@@ -2,7 +2,8 @@
 
 import requests
 from datetime import datetime
-from blocks import Block, Style
+from blocks import Block, ImageBlock, TextBlock, Style
+from typing import assert_never
 
 def get_wikipedia_info() -> list[Block]:
     today = datetime.now()
@@ -23,22 +24,29 @@ def get_wikipedia_info() -> list[Block]:
     # Most read articles
     mostread = data.get("mostread")["articles"][:5]
 
-    blocks = [Block("Today's featured article", Style.SUBHEADING)]
-    blocks.append(Block(tfa_title))
-    blocks.append(Block(tfa_extract))
-    blocks.append(Block("-", Style.SUBHEADING))
-    blocks.append(Block("Most read articles", Style.SUBHEADING))
+    blocks: list[Block] = []
+    blocks.append(TextBlock("Today's featured article", Style.SUBHEADING))
+    blocks.append(TextBlock(tfa_title))
+    blocks.append(TextBlock(tfa_extract))
+    blocks.append(TextBlock("-", Style.SUBHEADING))
+    blocks.append(TextBlock("Most read articles", Style.SUBHEADING))
     for mr in mostread:
-        blocks.append(Block(mr["titles"]["normalized"]))
-        blocks.append(Block(mr["description"]))
-        blocks.append(Block("(" + str(mr["views"]) + " views)", Style.RIGHT_ALIGN))
+        blocks.append(TextBlock(mr["titles"]["normalized"]))
+        blocks.append(TextBlock(mr["description"]))
+        blocks.append(TextBlock("(" + str(mr["views"]) + " views)", Style.RIGHT_ALIGN))
 
     return blocks
 
 if __name__ == "__main__":
-    wikipedia_info = get_wikipedia_info()
+    wikipedia_blocks = get_wikipedia_info()
 
     print("\n\n")
-    for block in wikipedia_info:
-        print(block.text)
+    for block in wikipedia_blocks:
+        match block:
+            case ImageBlock():
+                print("<image>")
+            case TextBlock():
+                print(block.text)
+            case _:
+                assert_never(block)
     print("\n\n")

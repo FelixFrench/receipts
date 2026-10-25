@@ -12,7 +12,7 @@ from DataSources.ReverseGeocode import reverse_geocode_label
 from DataSources.Weather import get_day_forecast
 from DataSources.Energy import get_energy_consumption
 from DataSources.Word import get_word_of_the_day
-from DataSources.News import get_headlines, Headlines, HEADLINES_UNAVAILABLE
+from DataSources.News import get_headlines
 from DataSources.Wikipedia import get_wikipedia_info
 from DataSources.Burns import get_burns_poem
 import textwrap
@@ -20,7 +20,7 @@ from escpos.escpos import Escpos
 from escpos.printer import Network
 from config import load_config
 from helpers import get_today_string, safe_call
-from blocks import Block, Style
+from blocks import Block, TextBlock, ImageBlock, Style
 from typing import assert_never
 
 PRINTER_IP = "192.168.1.165"
@@ -57,27 +57,26 @@ def print_line(printer: Escpos, text: str, style: Style = Style.BODY, margin: in
 
 
 def print_block(printer: Escpos, block: Block, margin: int = MARGIN) -> None:
-    lines = block.text.split("\n")
-    columns = printer.profile.get_columns(font=FONT)
-    for line in lines:
-        wrapped_lines = textwrap.wrap(line, columns - 2 * margin)
-        for wrapped_line in wrapped_lines:
-            print_line(printer, wrapped_line, block.style, margin)
+    match block:
+            case TextBlock():
+                lines = block.text.split("\n")
+                columns = printer.profile.get_columns(font=FONT)
+                for line in lines:
+                    wrapped_lines = textwrap.wrap(line, columns - 2 * margin)
+                    for wrapped_line in wrapped_lines:
+                        print_line(printer, wrapped_line, block.style, margin)
+
+            case ImageBlock():
+                printer.set(align="center")
+                printer.image(block.image)
+
+            case _:
+                assert_never(block)
 
 
 def print_blocks(printer: Escpos, blocks: list[Block], margin: int = MARGIN) -> None:
     for block in blocks:
         print_block(printer, block, margin)
-
-
-def print_headlines(printer: Escpos, heading: str, headlines: Headlines) -> None:
-    """print a heading, a thumbnail if there is one, then the headline blocks"""
-    print_line(printer, heading, Style.HEADING)
-    printer.set(align="center")
-    if headlines.image:
-        printer.image(headlines.image)
-    print_blocks(printer, headlines.blocks)
-    printer.ln(2)
 
 
 def main() -> None:
@@ -88,70 +87,45 @@ def main() -> None:
     printer = Network(PRINTER_IP, profile=PRINTER_TYPE)
     printer.set(font=FONT)
 
-    location_string = safe_call(
-        reverse_geocode_label,
-        cfg.lat_long,
-        default="Unrecognised location"
-        )
+    today_blocks: list[Block] = [TextBlock(get_today_string())]
 
-    weather_block = safe_call(
-        get_day_forecast,
-        cfg.lat_long,
-        default=Block("Not available")
-        )
+    location_blocks = safe_call(reverse_geocode_label, cfg.lat_long)
 
-    energy_block = safe_call(
+    weather_blocks = safe_call(get_day_forecast,cfg.lat_long)
+
+    energy_blocks = safe_call(
         get_energy_consumption,
         cfg.energy_api_key, cfg.energy_product, cfg.postcode,
-        cfg.energy_mpan, cfg.energy_msn,
-        default=Block("Not available")
+        cfg.energy_mpan, cfg.energy_msn
         )
 
-    wotd_blocks = safe_call(
-        get_word_of_the_day,
-        default=[Block("Not available")]
-        )
+    wotd_blocks = safe_call(get_word_of_the_day)
 
-    national_news_headlines = safe_call(
-        get_headlines, cfg.news_national,
-        default=HEADLINES_UNAVAILABLE
-        )
+    national_news_blocks = safe_call(get_headlines, cfg.news_national)
 
-    local_news_headlines = safe_call(
-        get_headlines, cfg.news_local,
-        default=HEADLINES_UNAVAILABLE
-        )
+    local_news_blocks = safe_call(get_headlines, cfg.news_local)
 
-    sport_headlines = safe_call(
-        get_headlines, cfg.news_sport,
-        default=HEADLINES_UNAVAILABLE
-        )
+    sport_blocks = safe_call(get_headlines, cfg.news_sport)
 
-    wikipedia_blocks = safe_call(
-        get_wikipedia_info,
-        default=[Block("Not available")]
-        )
+    wikipedia_blocks = safe_call(get_wikipedia_info)
 
-    poem = safe_call(
-        get_burns_poem,
-        default = [Block("Not available")]
-        )
+    poem = safe_call(get_burns_poem)
 
     # Date
-    print_line(printer, get_today_string(), Style.HEADING)
+    print_blocks(printer, today_blocks)
 
     # Location
-    print_line(printer, location_string, Style.SUBHEADING)
+    print_blocks(printer, location_blocks)
     printer.ln(2)
 
     # Weather
     print_line(printer, "WEATHER", Style.HEADING)
-    print_block(printer, weather_block)
+    print_blocks(printer, weather_blocks)
     printer.ln(2)
 
     # Energy
     print_line(printer, "ENERGY CONSUMPTION", Style.HEADING)
-    print_block(printer, energy_block)
+    print_blocks(printer, energy_blocks)
     printer.ln(2)
 
     # Word
@@ -160,9 +134,15 @@ def main() -> None:
     printer.ln(2)
 
     # Print news and sport
-    print_headlines(printer, "NATIONAL NEWS", national_news_headlines)
-    print_headlines(printer, "LOCAL NEWS", local_news_headlines)
-    print_headlines(printer, "SPORT", sport_headlines)
+    print_line(printer, "NATIONAL NEWS", Style.HEADING)
+    print_blocks(printer, national_news_blocks)
+    printer.ln(2)
+    print_line(printer, "LOCAL NEWS", Style.HEADING)
+    print_blocks(printer, local_news_blocks)
+    printer.ln(2)
+    print_line(printer, "SPORT", Style.HEADING)
+    print_blocks(printer, sport_blocks)
+    printer.ln(2)
 
     # Wikipedia
     print_line(printer, "WIKIPEDIA", Style.HEADING)

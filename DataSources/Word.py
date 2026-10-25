@@ -2,7 +2,8 @@
 
 import requests
 from xml.etree import ElementTree
-from blocks import Block
+from blocks import Block, ImageBlock, TextBlock
+from typing import assert_never
 
 def get_word_of_the_day() -> list[Block]:
 
@@ -23,12 +24,18 @@ def get_word_of_the_day() -> list[Block]:
     if description_text is None:
         raise Exception("No description found in the item")
 
-    return [Block(title_text), Block(description_text)]
+    return [TextBlock(title_text), TextBlock(description_text)]
 
 if __name__ == "__main__":
-    wotd = get_word_of_the_day()
+    wotd_blocks = get_word_of_the_day()
 
     print("\n\n")
-    for block in wotd:
-        print(block.text)
+    for block in wotd_blocks:
+        match block:
+            case ImageBlock():
+                print("<image>")
+            case TextBlock():
+                print(block.text)
+            case _:
+                assert_never(block)
     print("\n\n")

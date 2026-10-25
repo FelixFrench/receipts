@@ -3,8 +3,8 @@
 import requests
 from datetime import datetime
 from typing import TypedDict, cast
-from blocks import Block
-
+from blocks import Block, ImageBlock, TextBlock
+from typing import assert_never
 
 class DailyForecast(TypedDict):
     """
@@ -63,7 +63,7 @@ def fetch_weather_data(lat_long: tuple[float, float]) -> ForecastResponse:
 
     return cast(ForecastResponse, data)
 
-def format_weather_data(data: ForecastResponse) -> Block:
+def format_weather_data(data: ForecastResponse) -> list[Block]:
 
     daily = data["daily"]
 
@@ -90,10 +90,10 @@ def format_weather_data(data: ForecastResponse) -> Block:
     data_string += f"\nPrecipitation: {precipitation_probability_max} %, {precipitation_hours} h, {precipitation_sum} mm"
     data_string += f"\nWind: {wind_speed_10m_max} km/h ({wind_gusts_10m_max} km/h gusts)"
 
-    return Block(data_string)
+    return [TextBlock(data_string)]
 
 
-def get_day_forecast(lat_long: tuple[float, float]) -> Block:
+def get_day_forecast(lat_long: tuple[float, float]) -> list[Block]:
 
     data = fetch_weather_data(lat_long)
     return format_weather_data(data)
@@ -105,8 +105,15 @@ if __name__ == "__main__":
 
     cfg = load_config()
 
-    forecast = get_day_forecast(cfg.lat_long)
+    forecast_blocks = get_day_forecast(cfg.lat_long)
 
     print("\n\n")
-    print(forecast.text)
+    for block in forecast_blocks:
+        match block:
+            case ImageBlock():
+                print("<image>")
+            case TextBlock():
+                print(block.text)
+            case _:
+                assert_never(block)
     print("\n\n")

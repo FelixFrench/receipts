@@ -4,8 +4,9 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 import textwrap
-from blocks import Block, Style
+from blocks import Block, ImageBlock, TextBlock, Style
 from dataclasses import dataclass
+from typing import assert_never
 
 # Base site URL
 BASE_URL = "https://robertburns.org"
@@ -96,7 +97,9 @@ def get_burns_poem(width: int = 34) -> list[Block]:
     """
     
     poem_id = choose_poem()
-    blocks = [Block(poem_id.title, Style.SUBHEADING)]
+    blocks: list[Block] = []
+    blocks.append(TextBlock(poem_id.title, Style.SUBHEADING))
+    
     poem_text = scrape_poem(poem_id.slug)
 
     wrapped_lines = []
@@ -117,15 +120,21 @@ def get_burns_poem(width: int = 34) -> list[Block]:
 
         wrapped_lines.extend(wrapped)
 
-    blocks.extend([Block(line) for line in wrapped_lines])
+    blocks.extend([TextBlock(line) for line in wrapped_lines])
     return blocks
 
 
 if __name__ == "__main__":
 
-    poem = get_burns_poem()
+    poem_blocks = get_burns_poem()
     
     print("\n\n")
-    for block in poem:
-        print(block.text)
+    for block in poem_blocks:
+        match block:
+            case ImageBlock():
+                print("<image>")
+            case TextBlock():
+                print(block.text)
+            case _:
+                assert_never(block)
     print("\n\n")

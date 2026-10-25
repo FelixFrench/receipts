@@ -2,16 +2,10 @@ import feedparser, requests
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from io import BytesIO
-from PIL import Image, ImageFile
-from blocks import Block, Style
+from PIL import Image
+from blocks import Block, ImageBlock, TextBlock, Style
 from dataclasses import dataclass
-
-@dataclass(frozen=True)
-class Headlines:
-    blocks: list[Block]
-    image: ImageFile.ImageFile | None = None
-
-HEADLINES_UNAVAILABLE = Headlines([Block("Not available")])
+from typing import assert_never
 
 @dataclass(frozen=True)
 class Article:
@@ -75,7 +69,7 @@ def get_headline_data(rss_url:str, limit:int=5, max_age:int=24) -> list[Article]
 
     return results
 
-def format_news(articles: list[Article]) -> Headlines:
+def format_news(articles: list[Article]) -> list[Block]:
     """
     Format output from get_headline_data ready for printing.
 
@@ -83,30 +77,33 @@ def format_news(articles: list[Article]) -> Headlines:
         articles: List of Article
 
     Returns:
-        Headlines
+        list[Block]
     """
-    
-    blocks = []
-    image = None
 
-    for a in articles:
-        blocks.append(Block(a.title))
-        blocks.append(Block(a.pub_date, Style.RIGHT_ALIGN))
+    if not articles:
+        return [TextBlock("Not available")]
+    
+    blocks: list[ImageBlock | TextBlock] = []
 
     # Try to get an image for the first article
     try:
-        first_thumbnail = articles[0].thumb_url if articles else None
+        first_thumbnail = articles[0].thumb_url
         if first_thumbnail:
             response = requests.get(first_thumbnail)
             response.raise_for_status()
             image = Image.open(BytesIO(response.content))
+            blocks.append(ImageBlock(image))
     except Exception:
         pass
 
-    return Headlines(blocks, image)
+    for a in articles:
+        blocks.append(TextBlock(a.title))
+        blocks.append(TextBlock(a.pub_date, Style.RIGHT_ALIGN))
+
+    return blocks
 
 
-def get_headlines(rss_url: str, limit: int = 5, max_age: int = 24) -> Headlines:
+def get_headlines(rss_url: str, limit: int = 5, max_age: int = 24) -> list[Block]:
     articles = get_headline_data(rss_url, limit, max_age)
     return format_news(articles)
 
@@ -135,9 +132,15 @@ if __name__ == "__main__":
             print(f"Thumbnail: {a.thumb_url}")
             print("-" * 40)
 
-        headlines = format_news(articles)
+        headlines_blocks = format_news(articles)
 
         print("\n\n")
-        for block in headlines.blocks:
-            print(block.text)
+        for block in headlines_blocks:
+            match block:
+                case ImageBlock():
+                    print("<image>")
+                case TextBlock():
+                    print(block.text)
+                case _:
+                    assert_never(block)
         print("\n\n")

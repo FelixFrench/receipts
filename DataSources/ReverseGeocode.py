@@ -1,6 +1,8 @@
 import requests
+from blocks import Block, ImageBlock, TextBlock
+from typing import assert_never
 
-def reverse_geocode_label(lat_long: tuple[float,float]) -> str:
+def reverse_geocode_label(lat_long: tuple[float,float]) -> list[Block]:
     """
     Return a human-readable location label for the given latitude/longitude
     using Nominatim reverse geocoding.
@@ -23,9 +25,9 @@ def reverse_geocode_label(lat_long: tuple[float,float]) -> str:
     data = response.json()
     location_name = data.get("name")
     if not isinstance(location_name, str) or not location_name:
-        return "Unrecognised location"
+        return [TextBlock("Unrecognised location")]
 
-    return location_name
+    return [TextBlock(location_name)]
 
 
 if __name__ == "__main__":
@@ -33,5 +35,16 @@ if __name__ == "__main__":
 
     cfg = load_config()
 
-    print(reverse_geocode_label(cfg.lat_long))
+    location_blocks = reverse_geocode_label(cfg.lat_long)
+
+    print("\n\n")
+    for block in location_blocks:
+        match block:
+            case ImageBlock():
+                print("<image>")
+            case TextBlock():
+                print(block.text)
+            case _:
+                assert_never(block)
+    print("\n\n")
     

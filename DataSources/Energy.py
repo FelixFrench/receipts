@@ -3,8 +3,8 @@ import requests
 import pandas as pd
 from tabulate import tabulate
 from datetime import datetime, timedelta
-from typing import TypedDict, cast
-from blocks import Block
+from typing import TypedDict, cast, assert_never
+from blocks import Block, ImageBlock, TextBlock
 
 class ConsumptionReading(TypedDict):
     consumption: float      # kWh
@@ -141,7 +141,10 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
     data_string += "\n" + tabulate(table, headers=["", "Usage [kWh]", "Charge"])
     data_string += "\n\n" + comparison_string
 
-    return Block(data_string)
+    blocks: list[Block] = []
+    blocks.append(TextBlock(data_string))
+
+    return blocks
 
 
 if __name__ == "__main__":
@@ -149,11 +152,18 @@ if __name__ == "__main__":
 
     cfg = load_config()
 
-    energy_data = get_energy_consumption(
+    energy_blocks = get_energy_consumption(
         cfg.energy_api_key, cfg.energy_product, cfg.postcode,
         cfg.energy_mpan, cfg.energy_msn
     )
 
     print("\n\n")
-    print(energy_data.text)
+    for block in energy_blocks:
+        match block:
+            case ImageBlock():
+                print("<image>")
+            case TextBlock():
+                print(block.text)
+            case _:
+                assert_never(block)
     print("\n\n")

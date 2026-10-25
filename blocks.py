@@ -2,6 +2,7 @@
 
 from enum import Enum
 from dataclasses import dataclass
+from PIL import Image
 
 class Style(Enum):
     HEADING = 1
@@ -10,11 +11,19 @@ class Style(Enum):
     BODY = 4
 
 @dataclass(frozen=True)
-class Block:
+class TextBlock:
     text: str
     style: Style = Style.BODY
 
+@dataclass(frozen=True)
+class ImageBlock:
+    image: Image.Image
+
+type Block = TextBlock | ImageBlock
+
+type Section = list[Block]
+
 
 if __name__ == "__main__":
-    b = Block("abc")
+    b = TextBlock("abc")
     print(b)
