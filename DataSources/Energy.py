@@ -11,33 +11,71 @@ class ConsumptionReading(TypedDict):
     interval_start: str     # ISO 8601 timestamp
     interval_end: str
 
-def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn: str) -> Block:
+
+def get_gsp_code(postcode: str) -> str:
+    """
+    Finds the Octopus "grid supply point code" for the given postcode
+    """
+
+    url = f"https://api.octopus.energy/v1/industry/grid-supply-points/?postcode={postcode}"
+    (r := requests.get(url)).raise_for_status()
+
+    results = r.json().get("results")
+    if not results:
+        raise ValueError(f"No grid supply point results returned for postcode {postcode}")
+    
+    group_id = results[0].get("group_id")
+    if not group_id:
+        raise ValueError(f"Missing group_id in grid supply point response for postcode {postcode}")
+    
+    if not isinstance(group_id, str):
+        raise ValueError(f"Octopus API returned invalid group_id {group_id} for postcode {postcode}")
+
+    return group_id.lstrip("_")
+
+
+def get_rate(product:str, tariff: str, rate: str) -> float:
+    """
+    Gets the cost in GBP of a given rate for a given tariff and product
+    """
+
+    url = f"https://api.octopus.energy/v1/products/{product}/electricity-tariffs/{tariff}/{rate}/"
+    (r := requests.get(url)).raise_for_status()
+
+    results = r.json().get("results")
+    if not results:
+        raise ValueError(f"No energy rate results returned for {tariff}/{rate}")
+    
+    value = results[0].get("value_inc_vat")
+    if value is None:
+        raise ValueError(f"Energy rate results malformed for {tariff}/{rate}")
+    
+    return float(value) / 100
+
+
+def get_last_24h_consumption(mpan:str, msn: str, key: str) -> list[ConsumptionReading]:
+    """
+    Requests the most recent available 24 hours (48x 30min readings) of consumption data
+    """
+
+    url = f"https://api.octopus.energy/v1/electricity-meter-points/{mpan}/meters/{msn}/consumption/"
+    url += "?page_size=48&order_by=-period"
+
+    (r := requests.get(url, auth=(key, ''))).raise_for_status()
+
+    consumption = r.json().get('results')
+    if not isinstance(consumption, list):
+        raise ValueError("Octopus API returned invalid consumption data")
+    
+    return cast(list[ConsumptionReading], consumption)
+
+
+def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn: str) -> list[Block]:
     """
     Creates a formatted block of text giving information on recent energy consumption for one metering point
     """
     
     # ---------- Get Grid Supply Point code from postcode ----------
-    def get_gsp_code(postcode: str) -> str:
-        """
-        Finds the Octopus "grid supply point code" for the given postcode
-        """
-
-        url = f"https://api.octopus.energy/v1/industry/grid-supply-points/?postcode={postcode}"
-        (r := requests.get(url)).raise_for_status()
-
-        results = r.json().get("results")
-        if not results:
-            raise ValueError(f"No grid supply point results returned for postcode {postcode}")
-        
-        group_id = results[0].get("group_id")
-        if not group_id:
-            raise ValueError(f"Missing group_id in grid supply point response for postcode {postcode}")
-        
-        if not isinstance(group_id, str):
-            raise ValueError(f"Octopus API returned invalid group_id {group_id} for postcode {postcode}")
-
-        return group_id.lstrip("_")
-    
     gsp_code = get_gsp_code(postcode)
     
     # Form tariff identifier string
@@ -46,50 +84,16 @@ def get_energy_consumption(key: str, product: str, postcode: str, mpan: str, msn
     
     
     # ---------- Get rates ----------
-    def get_rate(tariff: str, rate: str) -> float:
-        """
-        Gets the cost in GBP of a given rate for a given tariff and product
-        """
+    single_rate = get_rate(product, single_tariff, "standard-unit-rates")
+    single_standing_charge = get_rate(product, single_tariff, "standing-charges")
 
-        url = f"https://api.octopus.energy/v1/products/{product}/electricity-tariffs/{tariff}/{rate}/"
-        (r := requests.get(url)).raise_for_status()
-
-        results = r.json().get("results")
-        if not results:
-            raise ValueError(f"No energy rate results returned for {tariff}/{rate}")
-        
-        value = results[0].get("value_inc_vat")
-        if value is None:
-            raise ValueError(f"Energy rate results malformed for {tariff}/{rate}")
-        
-        return float(value) / 100
-    
-    single_rate = get_rate(single_tariff, "standard-unit-rates")
-    single_standing_charge = get_rate(single_tariff, "standing-charges")
-
-    dual_day_rate = get_rate(dual_tariff, "day-unit-rates")
-    dual_night_rate = get_rate(dual_tariff, "night-unit-rates")
-    dual_standing_charge = get_rate(dual_tariff, "standing-charges")
+    dual_day_rate = get_rate(product, dual_tariff, "day-unit-rates")
+    dual_night_rate = get_rate(product, dual_tariff, "night-unit-rates")
+    dual_standing_charge = get_rate(product, dual_tariff, "standing-charges")
 
 
     # ---------- Get consumption data from meter ----------
-    def get_last_24h_consumption() -> list[ConsumptionReading]:
-        """
-        Requests the most recent available 24 hours (48x 30min readings) of consumption data
-        """
-
-        url = f"https://api.octopus.energy/v1/electricity-meter-points/{mpan}/meters/{msn}/consumption/"
-        url += "?page_size=48&order_by=-period"
-
-        (r := requests.get(url, auth=(key, ''))).raise_for_status()
-
-        consumption = r.json().get('results')
-        if not isinstance(consumption, list):
-            raise ValueError("Octopus API returned invalid consumption data")
-        
-        return cast(list[ConsumptionReading], consumption)
-    
-    consumption_data = get_last_24h_consumption()
+    consumption_data = get_last_24h_consumption(mpan, msn, key)
 
 
     # ---------- Process data ----------
