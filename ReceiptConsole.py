@@ -6,117 +6,56 @@
 # Worldometer? https://worldometer.readthedocs.io/en/latest/
 # Sort news
 
-from DataSources.ReverseGeocode import reverse_geocode_label
-from DataSources.Weather import get_day_forecast
-from DataSources.Energy import get_energy_consumption
-from DataSources.Word import get_word_of_the_day
-from DataSources.News import get_headlines
-from DataSources.Wikipedia import get_wikipedia_info
-from DataSources.Burns import get_burns_poem
 from time import sleep
 from config import load_config
-from helpers import get_today_string, safe_call
-from blocks import Block, TextBlock, ImageBlock
+from blocks import TextBlock, ImageBlock, Style, Section
 from typing import assert_never
+from content import gather_sections
+from shared import format_text
 
 RECEIPT_WIDTH = 42
 MARGIN = 2
-WIDTH = RECEIPT_WIDTH - 2 * MARGIN
+
+def print_text(text: str, style: Style = Style.BODY, margin: int = MARGIN) -> None:
+
+    formatted_lines = format_text(text, RECEIPT_WIDTH, margin, style)
+
+    if style == Style.HEADING:
+        print("\033[1m", end='')
+
+    for line in formatted_lines:
+        print(line)
+        sleep(0.02)
+
+    if style == Style.HEADING:
+        print("\033[0m", end='')
 
 
-def strip_blocks_formatting(blocks: list[Block]) -> str:
-    
-    stripped_blocks:list[str] = []
-    for block in blocks:
+def print_section(section: Section, margin: int = MARGIN) -> None:
+    for block in section:
         match block:
             case TextBlock():
-                stripped_blocks.append(block.text)
+                print_text(block.text, block.style, margin)
+
             case ImageBlock():
-                stripped_blocks.append("<image>")
+                print_text("<image>", Style.CENTER)
+
             case _:
                 assert_never(block)
-
-    return "\n".join(stripped_blocks)
+    
+    print("\n")
 
 
 def main() -> None:
 
     cfg = load_config()
 
-    today_blocks = [TextBlock(get_today_string())]
+    sections = gather_sections(cfg, verbose=True)
 
-    print("Location")
-    location_blocks = safe_call(reverse_geocode_label, cfg.lat_long)
+    print("\n\n")
 
-    print("Weather")
-    weather_blocks = safe_call(get_day_forecast, cfg.lat_long)
-
-    print("Energy")
-    energy_blocks = safe_call(
-        get_energy_consumption,
-        cfg.energy_api_key, cfg.energy_product, cfg.postcode,
-        cfg.energy_mpan, cfg.energy_msn
-        )
-
-    print("Word")
-    wotd_blocks = safe_call(get_word_of_the_day)
-
-    print("National news")
-    national_news_blocks = safe_call(get_headlines, cfg.news_national)
-
-    print("Local news")
-    local_news_blocks = safe_call(get_headlines, cfg.news_local)
-
-    print("Sport")
-    sport_blocks = safe_call(get_headlines, cfg.news_sport)
-
-    print("Wikipedia")
-    wikipedia_blocks = safe_call(get_wikipedia_info)
-
-    print("Poem")
-    poem_blocks = safe_call(get_burns_poem)
-
-
-    # ---------- Printing ----------
-    output = (" " + get_today_string() + " ").center(WIDTH, "=") + "\n"
-    output += (strip_blocks_formatting(location_blocks)).center(WIDTH) + "\n\n"
-
-    output += " WEATHER ".center(WIDTH, "=") + "\n"
-    output += strip_blocks_formatting(weather_blocks)
-    output += "\n\n"
-
-    output += " ENERGY CONSUMPTION ".center(WIDTH, "=") + "\n"
-    output += strip_blocks_formatting(energy_blocks)
-    output += "\n\n"
-
-    output += " WORD OF THE DAY ".center(WIDTH, "=") + "\n"
-    output += strip_blocks_formatting(wotd_blocks)
-    output += "\n\n"
-
-    output += " NATIONAL NEWS ".center(WIDTH, "=") + "\n"
-    output += strip_blocks_formatting(national_news_blocks)
-    output += "\n\n"
-
-    output += " LOCAL NEWS ".center(WIDTH, "=") + "\n"
-    output += strip_blocks_formatting(local_news_blocks)
-    output += "\n\n"
-
-    output += " SPORT ".center(WIDTH, "=") + "\n"
-    output += strip_blocks_formatting(sport_blocks)
-    output += "\n\n"
-
-    output += " WIKIPEDIA ".center(WIDTH, "=") + "\n"
-    output += strip_blocks_formatting(wikipedia_blocks)
-    output += "\n\n"
-
-    output += " TODAY'S BURNS POEM ".center(WIDTH, "=") + "\n"
-    output += strip_blocks_formatting(poem_blocks)
-    output += "\n\n"
-
-    output_lines = output.splitlines()
-    for line in output_lines:
-        print(line[:WIDTH])
-        sleep(0.02)
+    for section in sections:
+        print_section(section)
 
 if __name__ == "__main__":
     main()

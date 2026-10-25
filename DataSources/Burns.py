@@ -3,7 +3,6 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone
-import textwrap
 from blocks import Block, ImageBlock, TextBlock, Style
 from dataclasses import dataclass
 from typing import assert_never
@@ -88,7 +87,7 @@ def scrape_poem(slug: str) -> str:
     return "\n".join(poem_stanzas)
 
 
-def get_burns_poem(width: int = 34) -> list[Block]:
+def get_burns_poem() -> list[Block]:
     """
     Gets today's burns poem by scraping a website
     
@@ -96,31 +95,14 @@ def get_burns_poem(width: int = 34) -> list[Block]:
     Returns a list of blocks
     """
     
-    poem_id = choose_poem()
     blocks: list[Block] = []
+
+    poem_id = choose_poem()
     blocks.append(TextBlock(poem_id.title, Style.SUBHEADING))
     
     poem_text = scrape_poem(poem_id.slug)
+    blocks.append(TextBlock(poem_text, Style.POETRY))
 
-    wrapped_lines = []
-
-    for line in poem_text.splitlines():
-        # Preserve blank lines (stanza breaks)
-        if not line.strip():
-            wrapped_lines.append("")
-            continue
-
-        wrapped = textwrap.wrap(
-            line,
-            width=width,
-            subsequent_indent="  ",
-            break_long_words=False,
-            break_on_hyphens=False,
-        )
-
-        wrapped_lines.extend(wrapped)
-
-    blocks.extend([TextBlock(line) for line in wrapped_lines])
     return blocks
 
 

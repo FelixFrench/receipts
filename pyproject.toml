@@ -1,5 +1,5 @@
 [tool.mypy]
-files = ["config.py", "helpers.py", "ReceiptPrinter.py", "ReceiptConsole.py", "DataSources", "blocks.py"]
+files = ["config.py", "content.py", "ReceiptPrinter.py", "ReceiptConsole.py", "DataSources", "blocks.py", "shared.py"]
 strict = true
 enable_error_code = ["possibly-undefined"]
 

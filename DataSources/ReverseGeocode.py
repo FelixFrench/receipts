@@ -1,5 +1,5 @@
 import requests
-from blocks import Block, ImageBlock, TextBlock
+from blocks import Block, ImageBlock, TextBlock, Style
 from typing import assert_never
 
 def reverse_geocode_label(lat_long: tuple[float,float]) -> list[Block]:
@@ -25,9 +25,9 @@ def reverse_geocode_label(lat_long: tuple[float,float]) -> list[Block]:
     data = response.json()
     location_name = data.get("name")
     if not isinstance(location_name, str) or not location_name:
-        return [TextBlock("Unrecognised location")]
+        return [TextBlock("Unrecognised location", Style.SUBHEADING)]
 
-    return [TextBlock(location_name)]
+    return [TextBlock(location_name, Style.SUBHEADING)]
 
 
 if __name__ == "__main__":

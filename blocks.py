@@ -9,6 +9,8 @@ class Style(Enum):
     SUBHEADING = 2
     RIGHT_ALIGN = 3
     BODY = 4
+    POETRY = 5
+    CENTER = 6
 
 @dataclass(frozen=True)
 class TextBlock:
